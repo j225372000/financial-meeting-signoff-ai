@@ -1,1 +1,21 @@
+project:
+  name: Financial Meeting Signoff AI
+  timezone: Asia/Taipei
 
+paths:
+  slides_folder: data/input/slides
+  transcript_folder: data/input/transcript
+  signoff_samples_folder: data/input/signoff_samples
+
+  intermediate_folder: data/intermediate
+  output_folder: data/output
+
+output:
+  signoff_doc: data/output/signoff.docx
+
+workflow:
+  step1: extract_slide_structure
+  step2: extract_slide_summary
+  step3: enhance_with_transcript
+  step4: extract_qa
+  step5: generate_signoff
