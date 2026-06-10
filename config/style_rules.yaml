@@ -1,1 +1,22 @@
+tone:
+  style: 正式
+  perspective: 第三人稱
 
+preferred_phrases:
+  - 該公司表示
+  - 該公司說明
+  - 金融機構表示
+  - 至於
+  - 惟
+  - 爰
+  - 顯示
+  - 預估
+
+forbidden_phrases:
+  - 我覺得
+  - 他們說
+  - 很厲害
+  - 大概
+  - 好像
+  - 笑
+  - 客戶故事
