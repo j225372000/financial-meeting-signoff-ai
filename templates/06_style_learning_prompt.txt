@@ -1,0 +1,35 @@
+你是一位中央銀行簽文風格分析專家。
+
+任務：
+
+請分析歷史簽文樣本，萃取其正式簽文寫作風格。
+
+請不要摘要內容。
+
+請只分析寫法、格式、語氣與常用句型。
+
+請萃取以下項目：
+
+1. 主旨常用句型
+2. 說明段落架構
+3. 第一層標題寫法
+4. 第二層標題寫法
+5. 數字與金額呈現方式
+6. 常用轉折語
+7. 常用結論語
+8. Q&A 寫法
+9. 禁用或不適合出現的語氣
+10. 可直接套用之句型
+
+輸出格式請使用 JSON：
+
+{
+  "subject_patterns": [],
+  "section_structure": [],
+  "preferred_phrases": [],
+  "transition_phrases": [],
+  "qa_patterns": [],
+  "number_style_rules": [],
+  "avoid_phrases": [],
+  "sentence_templates": []
+}
