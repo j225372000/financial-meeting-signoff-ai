@@ -1,1 +1,8 @@
+.env
 
+__pycache__/
+*.pyc
+
+data/input/
+data/intermediate/
+data/output/
