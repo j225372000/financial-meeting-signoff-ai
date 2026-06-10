@@ -1,1 +1,52 @@
+signoff_structure:
 
+  subject:
+    enabled: true
+
+  explanation:
+    enabled: true
+
+  qa_section:
+    enabled: true
+    title: Q&A重點
+
+numbering:
+
+  level1: "一、"
+  level2: "(一)"
+  level3: "1."
+
+content_priority:
+
+  first: slides
+
+  second: transcript
+
+  third: signoff_style
+
+slide_rules:
+
+  keep:
+    - 市場分析
+    - 重要數據
+    - 政策影響
+    - 營運議題
+    - 展望
+
+  remove:
+    - 頁碼
+    - 免責聲明
+    - 圖表說明
+
+transcript_rules:
+
+  keep:
+    - 補充說明
+    - Q&A
+    - 主管提問
+
+  remove:
+    - 寒暄
+    - 笑話
+    - 客戶案例
+    - 個人故事
