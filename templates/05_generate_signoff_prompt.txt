@@ -8,7 +8,27 @@
 2. slide_summary.json
 3. transcript_enhancement.json
 4. qa_summary.json
-5. 歷史簽文樣本風格
+5. signoff_style_library.json
+請優先參考 signoff_style_library.json 中的：
+
+1. 主旨句型
+2. 說明段落架構
+3. 第一層及第二層標題格式
+4. 常用轉折語
+5. 常用結論語
+6. Q&A 寫法
+7. 數字呈現規則
+8. 簽文語氣
+
+若本次會議內容與歷史簽文風格衝突時，
+應以本次會議內容為主，
+簽文風格為輔。
+
+不得引用歷史簽文中的個案內容、
+公司名稱、
+數字、
+政策內容或結論。
+
 
 產製正式簽文草稿。
 
