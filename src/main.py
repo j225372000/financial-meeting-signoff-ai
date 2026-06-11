@@ -21,7 +21,7 @@ SIGNOFF_SAMPLE_DIR = f"{BASE_DIR}/input/signoff_samples"
 INTERMEDIATE_DIR = f"{BASE_DIR}/intermediate"
 OUTPUT_DIR = f"{BASE_DIR}/output"
 
-MODEL_MAIN = "models/gemini-2.5-flash"
+MODEL_MAIN = "models/gemini-2.5-flash-lite"
 MODEL_BACKUP = "models/gemini-2.5-flash-lite"
 
 
