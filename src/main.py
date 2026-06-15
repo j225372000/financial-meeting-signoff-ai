@@ -87,7 +87,6 @@ def generate_with_retry(prompt, model_name=MODEL_MAIN, retry=3):
 def find_single_file(folder, extensions):
 files = []
 
-```
 for file_name in os.listdir(folder):
 
     if file_name.startswith("~$"):
@@ -112,8 +111,6 @@ if len(files) > 1:
     )
 
 return files[0]
-```
-
 
 
 def load_signoff_samples(file_loader):
