@@ -175,17 +175,43 @@ def main():
         )
     )
 
-    print("Step 6：產生 final_signoff.txt 與 final_signoff.docx")
+    print("Step 6：建立簽文草稿")
 
-    signoff_prompt = signoff_agent.generate_signoff(
-        slide_structure_json,
-        slide_summary_json,
-        enhanced_summary_json,
-        qa_summary_json,
-        signoff_style
-    )
+signoff_builder = load_module(
+    "signoff_builder",
+    "src/utils/signoff_builder.py"
+)
 
-    final_signoff_text = generate_with_retry(signoff_prompt)
+draft_outline = signoff_builder.build_signoff_outline(
+    slide_structure_json,
+    slide_summary_json,
+    enhanced_summary_json,
+    qa_summary_json
+)
+
+draft_outline_path = (
+    f"{INTERMEDIATE_DIR}/draft_signoff_outline.txt"
+)
+
+save_text(
+    draft_outline_path,
+    draft_outline
+)
+
+print(
+    f"簽文草稿已建立：{draft_outline_path}"
+)
+
+print("Step 7：潤稿產生正式簽文")
+
+signoff_prompt = signoff_agent.generate_signoff(
+    draft_outline,
+    signoff_style
+)
+
+final_signoff_text = generate_with_retry(
+    signoff_prompt
+)
 
     txt_path = f"{OUTPUT_DIR}/final_signoff.txt"
     docx_path = f"{OUTPUT_DIR}/final_signoff.docx"
@@ -194,9 +220,11 @@ def main():
     docx_writer.write_signoff_docx(final_signoff_text, docx_path)
 
     print("完成！")
-    print(f"中間成果：{INTERMEDIATE_DIR}")
-    print(f"文字檔：{txt_path}")
-    print(f"Word檔：{docx_path}")
+
+print(f"中間成果：{INTERMEDIATE_DIR}")
+print(f"簽文草稿：{draft_outline_path}")
+print(f"文字檔：{txt_path}")
+print(f"Word檔：{docx_path}")
 
 
 if __name__ == "__main__":
