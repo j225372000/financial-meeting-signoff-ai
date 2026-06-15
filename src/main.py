@@ -115,6 +115,7 @@ if len(files) > 1:
 return files[0]
 ```
 
+
 def load_signoff_samples(file_loader):
     """
     讀取歷史簽文樣本。
