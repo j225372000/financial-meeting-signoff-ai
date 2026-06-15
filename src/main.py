@@ -12,11 +12,9 @@ import google.generativeai as genai
 GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
 
 BASE_DIR = "/content/drive/MyDrive/會議紀錄自動化"
+
 SLIDE_DIR = f"{BASE_DIR}/input/slides"
 TRANSCRIPT_DIR = f"{BASE_DIR}/input/transcript"
-
-SLIDE_FILE = f"{BASE_DIR}/input/slides/金融機構簡報.pdf"
-TRANSCRIPT_FILE = f"{BASE_DIR}/input/transcript/元大(Iphone)逐字稿-整理後.docx"
 SIGNOFF_SAMPLE_DIR = f"{BASE_DIR}/input/signoff_samples"
 
 INTERMEDIATE_DIR = f"{BASE_DIR}/intermediate"
@@ -85,35 +83,37 @@ def generate_with_retry(prompt, model_name=MODEL_MAIN, retry=3):
     response = model.generate_content(prompt)
     return response.text
 
+
 def find_single_file(folder, extensions):
-files = []
+    """
+    從指定資料夾找出唯一符合副檔名的檔案。
+    若沒有檔案或超過一個檔案，直接報錯，避免抓錯資料。
+    """
+    files = []
 
-```
-for file_name in os.listdir(folder):
+    for file_name in os.listdir(folder):
+        if file_name.startswith("~$"):
+            continue
 
-    if file_name.startswith("~$"):
-        continue
+        if any(
+            file_name.lower().endswith(ext)
+            for ext in extensions
+        ):
+            files.append(
+                os.path.join(folder, file_name)
+            )
 
-    if any(
-        file_name.lower().endswith(ext)
-        for ext in extensions
-    ):
-        files.append(
-            os.path.join(folder, file_name)
+    if len(files) == 0:
+        raise FileNotFoundError(
+            f"找不到檔案：{folder}"
         )
 
-if len(files) == 0:
-    raise FileNotFoundError(
-        f"找不到檔案：{folder}"
-    )
+    if len(files) > 1:
+        raise ValueError(
+            f"{folder} 裡有超過一個檔案：\n{files}"
+        )
 
-if len(files) > 1:
-    raise ValueError(
-        f"{folder} 裡有超過一個檔案：\n{files}"
-    )
-
-return files[0]
-```
+    return files[0]
 
 
 def load_signoff_samples(file_loader):
@@ -124,6 +124,9 @@ def load_signoff_samples(file_loader):
     texts = []
 
     for file_name in os.listdir(SIGNOFF_SAMPLE_DIR):
+        if file_name.startswith("~$"):
+            continue
+
         if file_name.endswith(".docx"):
             file_path = os.path.join(SIGNOFF_SAMPLE_DIR, file_name)
             text = file_loader.load_file(file_path)
@@ -182,28 +185,22 @@ def main():
     )
 
     print("Step 1：讀取原始資料")
+
     slide_file = find_single_file(
-SLIDE_DIR,
-[".pdf"]
-)
+        SLIDE_DIR,
+        [".pdf"]
+    )
 
-transcript_file = find_single_file(
-TRANSCRIPT_DIR,
-[".docx"]
-)
+    transcript_file = find_single_file(
+        TRANSCRIPT_DIR,
+        [".docx"]
+    )
 
-print("使用簡報：", slide_file)
-print("使用逐字稿：", transcript_file)
+    print("使用簡報：", slide_file)
+    print("使用逐字稿：", transcript_file)
 
-
-    slide_text = file_loader.load_file(
-slide_file
-)
-
-transcript_text = file_loader.load_file(
-transcript_file
-)
-
+    slide_text = file_loader.load_file(slide_file)
+    transcript_text = file_loader.load_file(transcript_file)
     signoff_style = load_signoff_samples(file_loader)
 
     cleaned_slide = text_cleaner.clean_slide_text(slide_text)
@@ -279,6 +276,7 @@ transcript_file
     docx_path = f"{OUTPUT_DIR}/final_signoff.docx"
 
     save_text(txt_path, final_signoff_text)
+
     docx_writer.write_signoff_docx(
         final_signoff_text,
         docx_path
