@@ -9,14 +9,11 @@ def load_prompt(prompt_path: str) -> str:
 
 
 def build_signoff_prompt(
-    slide_structure: str,
-    slide_summary: str,
-    transcript_enhancement: str,
-    qa_summary: str,
+    draft_signoff_outline: str,
     signoff_style: str
 ) -> str:
     """
-    將所有中間成果與簽文風格塞入最終簽文生成 Prompt。
+    將簽文條列草稿與歷史簽文風格塞入最終潤稿 Prompt。
     """
     prompt_template = load_prompt(
         "templates/05_generate_signoff_prompt.txt"
@@ -25,21 +22,9 @@ def build_signoff_prompt(
     return f"""
 {prompt_template}
 
-以下為 slide_structure.json：
+以下為 draft_signoff_outline.txt：
 
-{slide_structure}
-
-以下為 slide_summary.json：
-
-{slide_summary}
-
-以下為 transcript_enhancement.json：
-
-{transcript_enhancement}
-
-以下為 qa_summary.json：
-
-{qa_summary}
+{draft_signoff_outline}
 
 以下為歷史簽文樣本風格：
 
@@ -48,22 +33,16 @@ def build_signoff_prompt(
 
 
 def generate_signoff(
-    slide_structure: str,
-    slide_summary: str,
-    transcript_enhancement: str,
-    qa_summary: str,
+    draft_signoff_outline: str,
     signoff_style: str
 ) -> str:
     """
-    第五階段：產出正式簽文草稿。
+    第五階段：依簽文條列草稿進行正式簽文潤稿。
 
     目前先回傳組合後的 Prompt。
-    下一步才會接 Gemini 或 OpenAI API。
+    實際 Gemini 呼叫由 main.py 負責。
     """
     return build_signoff_prompt(
-        slide_structure,
-        slide_summary,
-        transcript_enhancement,
-        qa_summary,
+        draft_signoff_outline,
         signoff_style
     )
