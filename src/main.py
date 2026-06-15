@@ -85,35 +85,35 @@ def generate_with_retry(prompt, model_name=MODEL_MAIN, retry=3):
 
 
 def find_single_file(folder, extensions):
-    """
-    從指定資料夾找出唯一符合副檔名的檔案。
-    若沒有檔案或超過一個檔案，直接報錯，避免抓錯資料。
-    """
-    files = []
+files = []
 
-    for file_name in os.listdir(folder):
-        if file_name.startswith("~$"):
-            continue
+```
+for file_name in os.listdir(folder):
 
-        if any(
-            file_name.lower().endswith(ext)
-            for ext in extensions
-        ):
-            files.append(
-                os.path.join(folder, file_name)
-            )
+    if file_name.startswith("~$"):
+        continue
 
-    if len(files) == 0:
-        raise FileNotFoundError(
-            f"找不到檔案：{folder}"
+    if any(
+        file_name.lower().endswith(ext)
+        for ext in extensions
+    ):
+        files.append(
+            os.path.join(folder, file_name)
         )
 
-    if len(files) > 1:
-        raise ValueError(
-            f"{folder} 裡有超過一個檔案：\n{files}"
-        )
+if len(files) == 0:
+    raise FileNotFoundError(
+        f"找不到檔案：{folder}"
+    )
 
-    return files[0]
+if len(files) > 1:
+    raise ValueError(
+        f"{folder} 裡有超過一個檔案：\n{files}"
+    )
+
+return files[0]
+```
+
 
 
 def load_signoff_samples(file_loader):
