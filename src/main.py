@@ -12,6 +12,8 @@ import google.generativeai as genai
 GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
 
 BASE_DIR = "/content/drive/MyDrive/會議紀錄自動化"
+SLIDE_DIR = f"{BASE_DIR}/input/slides"
+TRANSCRIPT_DIR = f"{BASE_DIR}/input/transcript"
 
 SLIDE_FILE = f"{BASE_DIR}/input/slides/金融機構簡報.pdf"
 TRANSCRIPT_FILE = f"{BASE_DIR}/input/transcript/元大(Iphone)逐字稿-整理後.docx"
@@ -83,6 +85,35 @@ def generate_with_retry(prompt, model_name=MODEL_MAIN, retry=3):
     response = model.generate_content(prompt)
     return response.text
 
+def find_single_file(folder, extensions):
+files = []
+
+```
+for file_name in os.listdir(folder):
+
+    if file_name.startswith("~$"):
+        continue
+
+    if any(
+        file_name.lower().endswith(ext)
+        for ext in extensions
+    ):
+        files.append(
+            os.path.join(folder, file_name)
+        )
+
+if len(files) == 0:
+    raise FileNotFoundError(
+        f"找不到檔案：{folder}"
+    )
+
+if len(files) > 1:
+    raise ValueError(
+        f"{folder} 裡有超過一個檔案：\n{files}"
+    )
+
+return files[0]
+```
 
 def load_signoff_samples(file_loader):
     """
@@ -150,9 +181,28 @@ def main():
     )
 
     print("Step 1：讀取原始資料")
+    slide_file = find_single_file(
+SLIDE_DIR,
+[".pdf"]
+)
 
-    slide_text = file_loader.load_file(SLIDE_FILE)
-    transcript_text = file_loader.load_file(TRANSCRIPT_FILE)
+transcript_file = find_single_file(
+TRANSCRIPT_DIR,
+[".docx"]
+)
+
+print("使用簡報：", slide_file)
+print("使用逐字稿：", transcript_file)
+
+
+    slide_text = file_loader.load_file(
+slide_file
+)
+
+transcript_text = file_loader.load_file(
+transcript_file
+)
+
     signoff_style = load_signoff_samples(file_loader)
 
     cleaned_slide = text_cleaner.clean_slide_text(slide_text)
