@@ -230,12 +230,12 @@ def main():
 
     print("Step 6：產生 FOMC 即時晨報")
 
-    morning_brief_prompt = (
-        fomc_morning_brief_agent.generate_fomc_morning_brief(
-            fomc_summary + "\n\n以下為點陣圖判讀結果：\n" + dotplot_summary,
-            fomc_compare,
-            fomc_implication
-        )
+    morning_brief_prompt = fomc_morning_brief_agent.generate_fomc_morning_brief(
+    fomc_summary,
+    fomc_compare,
+    fomc_implication,
+    dotplot_summary
+)
     )
 
     morning_brief_text = generate_with_retry(
