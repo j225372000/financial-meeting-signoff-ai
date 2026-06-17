@@ -112,7 +112,7 @@ def main():
     summary_agent = load_module("summary_agent", "src/agents/summary_agent.py")
     transcript_agent = load_module("transcript_agent", "src/transcript_agent.py")
     qa_agent = load_module("qa_agent", "src/qa_agent.py")
-    signoff_agent = load_module("signoff_agent", "src/signoff_agent.py")
+    writer_agent = load_module("writer_agent", "src/agents/writer_agent.py")
 
     print("Step 1：讀取原始資料")
 
@@ -195,12 +195,15 @@ def main():
 
     print("Step 7：潤稿產生正式簽文")
 
-    signoff_prompt = signoff_agent.generate_signoff(
-        draft_outline,
-        signoff_style
-    )
+    signoff_prompt = writer_agent.write(
+    "templates/05_generate_signoff_prompt.txt",
+    {
+        "draft_signoff_outline.txt": draft_outline,
+        "歷史簽文樣本風格": signoff_style
+    }
+)
 
-    final_signoff_text = generate_with_retry(signoff_prompt)
+final_signoff_text = generate_with_retry(signoff_prompt)
 
     txt_path = f"{OUTPUT_DIR}/final_signoff.txt"
     docx_path = f"{OUTPUT_DIR}/final_signoff.docx"
