@@ -79,7 +79,7 @@ def generate_with_retry(prompt, model_name=MODEL_MAIN, retry=3):
 def load_or_generate(path, generator_func):
     if os.path.exists(path):
         print(f"已存在，直接讀取：{path}")
-        return read_input(path)
+        return Path(path).read_text(encoding="utf-8")
 
     print(f"不存在，開始產生：{path}")
     result = generator_func()
