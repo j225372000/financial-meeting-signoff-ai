@@ -125,30 +125,30 @@ def main():
         "src/utils/docx_writer.py"
     )
 
-    fomc_summary_agent = load_module(
-        "fomc_summary_agent",
-        "src/agents/fomc_summary_agent.py"
-    )
+    summary_agent = load_module(
+    "summary_agent",
+    "src/agents/summary_agent.py"
+)
 
-    fomc_compare_agent = load_module(
-        "fomc_compare_agent",
-        "src/agents/fomc_compare_agent.py"
-    )
+compare_agent = load_module(
+    "compare_agent",
+    "src/agents/compare_agent.py"
+)
 
-    fomc_implication_agent = load_module(
-        "fomc_implication_agent",
-        "src/agents/fomc_implication_agent.py"
-    )
+implication_agent = load_module(
+    "implication_agent",
+    "src/agents/implication_agent.py"
+)
 
-    fomc_morning_brief_agent = load_module(
-        "fomc_morning_brief_agent",
-        "src/agents/fomc_morning_brief_agent.py"
-    )
+writer_agent = load_module(
+    "writer_agent",
+    "src/agents/writer_agent.py"
+)
 
-    fomc_dotplot_agent = load_module(
-        "fomc_dotplot_agent",
-        "src/agents/fomc_dotplot_agent.py"
-    )
+vision_agent = load_module(
+    "vision_agent",
+    "src/agents/vision_agent.py"
+)
 
     print("Step 1：讀取 FOMC 原始資料")
 
@@ -186,7 +186,9 @@ def main():
     dotplot_summary = load_or_generate(
         dotplot_path_out,
         lambda: generate_image_with_retry(
-            fomc_dotplot_agent.build_dotplot_prompt(),
+            vision_agent.analyze_image(
+    "templates/fomc/00_fomc_dotplot_prompt.txt"
+),
             dotplot_path
         )
     )
@@ -196,11 +198,14 @@ def main():
     fomc_summary = load_or_generate(
         summary_path,
         lambda: generate_with_retry(
-            fomc_summary_agent.extract_fomc_summary(
-                statement_current,
-                sep_text + "\n\n以下為點陣圖判讀結果：\n" + dotplot_summary,
-                press_conference
-            )
+            summary_agent.summarize(
+    "templates/fomc/01_fomc_summary_prompt.txt",
+    {
+        "本次FOMC聲明稿": statement_current,
+        "SEP與點陣圖資料": sep_text + "\n\n以下為點陣圖判讀結果：\n" + dotplot_summary,
+        "主席記者會內容": press_conference
+    }
+)
         )
     )
 
@@ -209,10 +214,13 @@ def main():
     fomc_compare = load_or_generate(
         compare_path,
         lambda: generate_with_retry(
-            fomc_compare_agent.compare_fomc_statement(
-                statement_current,
-                statement_previous
-            )
+           compare_agent.compare(
+    "templates/fomc/02_fomc_compare_prompt.txt",
+    {
+        "本次FOMC聲明稿": statement_current,
+        "前次FOMC聲明稿": statement_previous
+    }
+)
         )
     )
 
@@ -221,20 +229,26 @@ def main():
     fomc_implication = load_or_generate(
         implication_path,
         lambda: generate_with_retry(
-            fomc_implication_agent.analyze_fomc_implication(
-                fomc_summary,
-                fomc_compare
-            )
+            implication_agent.analyze(
+    "templates/fomc/03_fomc_implication_prompt.txt",
+    {
+        "本次FOMC政策重點整理": fomc_summary,
+        "本次與前次FOMC聲明稿比較": fomc_compare
+    }
+)
         )
     )
 
     print("Step 6：產生 FOMC 即時晨報")
 
-    morning_brief_prompt = fomc_morning_brief_agent.generate_fomc_morning_brief(
-    fomc_summary,
-    fomc_compare,
-    fomc_implication,
-    dotplot_summary
+    morning_brief_prompt = writer_agent.write(
+    "templates/fomc/04_fomc_morning_brief_prompt.txt",
+    {
+        "本次FOMC政策重點整理": fomc_summary,
+        "本次與前次FOMC聲明稿比較": fomc_compare,
+        "本次FOMC政策意涵分析": fomc_implication,
+        "利率點陣圖判讀結果": dotplot_summary
+    }
 )
     )
 
