@@ -76,6 +76,36 @@ def generate_with_retry(prompt, model_name=MODEL_MAIN, retry=3):
     return response.text
 
 
+def generate_image_with_retry(prompt, image_path, model_name=MODEL_MAIN, retry=3):
+    model = genai.GenerativeModel(model_name)
+
+    image_file = genai.upload_file(image_path)
+
+    for i in range(retry):
+        try:
+            response = model.generate_content(
+                [
+                    prompt,
+                    image_file
+                ]
+            )
+            return response.text
+
+        except Exception as e:
+            print(f"第 {i + 1} 次失敗：{e}")
+            time.sleep(30)
+
+    print("改用備援模型")
+    model = genai.GenerativeModel(MODEL_BACKUP)
+    response = model.generate_content(
+        [
+            prompt,
+            image_file
+        ]
+    )
+    return response.text
+
+
 def load_or_generate(path, generator_func):
     if os.path.exists(path):
         print(f"已存在，直接讀取：{path}")
@@ -115,6 +145,11 @@ def main():
         "src/agents/fomc_morning_brief_agent.py"
     )
 
+    fomc_dotplot_agent = load_module(
+        "fomc_dotplot_agent",
+        "src/agents/fomc_dotplot_agent.py"
+    )
+
     print("Step 1：讀取 FOMC 原始資料")
 
     statement_current = read_input(
@@ -133,29 +168,43 @@ def main():
         f"{FOMC_INPUT_DIR}/press_conference.pdf"
     )
 
+    dotplot_path = f"{FOMC_INPUT_DIR}/dotplot.png"
+
     print("本次聲明稿字數：", len(statement_current))
     print("前次聲明稿字數：", len(statement_previous))
     print("SEP資料字數：", len(sep_text))
     print("記者會資料字數：", len(press_conference))
+    print("點陣圖檔案：", dotplot_path)
 
+    dotplot_path_out = f"{FOMC_INTERMEDIATE_DIR}/dotplot_summary.json"
     summary_path = f"{FOMC_INTERMEDIATE_DIR}/fomc_summary.json"
     compare_path = f"{FOMC_INTERMEDIATE_DIR}/fomc_compare.json"
     implication_path = f"{FOMC_INTERMEDIATE_DIR}/fomc_implication.json"
 
-    print("Step 2：產生 FOMC Summary")
+    print("Step 2：判讀 FOMC Dot Plot")
+
+    dotplot_summary = load_or_generate(
+        dotplot_path_out,
+        lambda: generate_image_with_retry(
+            fomc_dotplot_agent.build_dotplot_prompt(),
+            dotplot_path
+        )
+    )
+
+    print("Step 3：產生 FOMC Summary")
 
     fomc_summary = load_or_generate(
         summary_path,
         lambda: generate_with_retry(
             fomc_summary_agent.extract_fomc_summary(
                 statement_current,
-                sep_text,
+                sep_text + "\n\n以下為點陣圖判讀結果：\n" + dotplot_summary,
                 press_conference
             )
         )
     )
 
-    print("Step 3：產生 FOMC Statement Compare")
+    print("Step 4：產生 FOMC Statement Compare")
 
     fomc_compare = load_or_generate(
         compare_path,
@@ -167,7 +216,7 @@ def main():
         )
     )
 
-    print("Step 4：產生 FOMC Implication")
+    print("Step 5：產生 FOMC Implication")
 
     fomc_implication = load_or_generate(
         implication_path,
@@ -179,11 +228,11 @@ def main():
         )
     )
 
-    print("Step 5：產生 FOMC 即時晨報")
+    print("Step 6：產生 FOMC 即時晨報")
 
     morning_brief_prompt = (
         fomc_morning_brief_agent.generate_fomc_morning_brief(
-            fomc_summary,
+            fomc_summary + "\n\n以下為點陣圖判讀結果：\n" + dotplot_summary,
             fomc_compare,
             fomc_implication
         )
@@ -205,6 +254,7 @@ def main():
 
     print("完成！")
     print(f"FOMC中間成果：{FOMC_INTERMEDIATE_DIR}")
+    print(f"點陣圖判讀：{dotplot_path_out}")
     print(f"文字檔：{txt_path}")
     print(f"Word檔：{docx_path}")
 
