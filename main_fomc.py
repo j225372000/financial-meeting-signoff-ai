@@ -3,6 +3,7 @@ import time
 import importlib.util
 from pathlib import Path
 
+import pdfplumber
 import google.generativeai as genai
 
 
@@ -25,8 +26,32 @@ def load_module(module_name, file_path):
     return module
 
 
-def read_text(path):
-    return Path(path).read_text(encoding="utf-8")
+def read_pdf(path):
+    texts = []
+
+    with pdfplumber.open(path) as pdf:
+        for page in pdf.pages:
+            page_text = page.extract_text()
+
+            if page_text:
+                texts.append(page_text)
+
+    return "\n".join(texts)
+
+
+def read_input(path):
+
+    if path.lower().endswith(".txt"):
+        return Path(path).read_text(
+            encoding="utf-8"
+        )
+
+    if path.lower().endswith(".pdf"):
+        return read_pdf(path)
+
+    raise ValueError(
+        f"不支援的格式：{path}"
+    )
 
 
 def save_text(path, content):
@@ -92,21 +117,21 @@ def main():
 
     print("Step 1：讀取 FOMC 原始資料")
 
-    statement_current = read_text(
-        f"{FOMC_INPUT_DIR}/statement_current.txt"
-    )
+    statement_current = read_input(
+    f"{FOMC_INPUT_DIR}/statement_current.pdf"
+)
 
-    statement_previous = read_text(
-        f"{FOMC_INPUT_DIR}/statement_previous.txt"
-    )
+statement_previous = read_input(
+    f"{FOMC_INPUT_DIR}/statement_previous.pdf"
+)
 
-    sep_text = read_text(
-        f"{FOMC_INPUT_DIR}/sep.txt"
-    )
+sep_text = read_input(
+    f"{FOMC_INPUT_DIR}/sep.pdf"
+)
 
-    press_conference = read_text(
-        f"{FOMC_INPUT_DIR}/press_conference.txt"
-    )
+press_conference = read_input(
+    f"{FOMC_INPUT_DIR}/press_conference.pdf"
+)
 
     print("本次聲明稿字數：", len(statement_current))
     print("前次聲明稿字數：", len(statement_previous))
