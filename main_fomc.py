@@ -40,7 +40,6 @@ def read_pdf(path):
 
 
 def read_input(path):
-
     if path.lower().endswith(".txt"):
         return Path(path).read_text(
             encoding="utf-8"
@@ -66,6 +65,7 @@ def generate_with_retry(prompt, model_name=MODEL_MAIN, retry=3):
         try:
             response = model.generate_content(prompt)
             return response.text
+
         except Exception as e:
             print(f"第 {i + 1} 次失敗：{e}")
             time.sleep(30)
@@ -79,7 +79,7 @@ def generate_with_retry(prompt, model_name=MODEL_MAIN, retry=3):
 def load_or_generate(path, generator_func):
     if os.path.exists(path):
         print(f"已存在，直接讀取：{path}")
-        return read_text(path)
+        return read_input(path)
 
     print(f"不存在，開始產生：{path}")
     result = generator_func()
@@ -118,20 +118,20 @@ def main():
     print("Step 1：讀取 FOMC 原始資料")
 
     statement_current = read_input(
-    f"{FOMC_INPUT_DIR}/statement_current.pdf"
-)
+        f"{FOMC_INPUT_DIR}/statement_current.pdf"
+    )
 
-statement_previous = read_input(
-    f"{FOMC_INPUT_DIR}/statement_previous.pdf"
-)
+    statement_previous = read_input(
+        f"{FOMC_INPUT_DIR}/statement_previous.pdf"
+    )
 
-sep_text = read_input(
-    f"{FOMC_INPUT_DIR}/sep.pdf"
-)
+    sep_text = read_input(
+        f"{FOMC_INPUT_DIR}/sep.pdf"
+    )
 
-press_conference = read_input(
-    f"{FOMC_INPUT_DIR}/press_conference.pdf"
-)
+    press_conference = read_input(
+        f"{FOMC_INPUT_DIR}/press_conference.pdf"
+    )
 
     print("本次聲明稿字數：", len(statement_current))
     print("前次聲明稿字數：", len(statement_previous))
