@@ -41,16 +41,12 @@ def read_pdf(path):
 
 def read_input(path):
     if path.lower().endswith(".txt"):
-        return Path(path).read_text(
-            encoding="utf-8"
-        )
+        return Path(path).read_text(encoding="utf-8")
 
     if path.lower().endswith(".pdf"):
         return read_pdf(path)
 
-    raise ValueError(
-        f"不支援的格式：{path}"
-    )
+    raise ValueError(f"不支援的格式：{path}")
 
 
 def save_text(path, content):
@@ -77,18 +73,14 @@ def generate_with_retry(prompt, model_name=MODEL_MAIN, retry=3):
 
 
 def generate_image_with_retry(prompt, image_path, model_name=MODEL_MAIN, retry=3):
-    model = genai.GenerativeModel(model_name)
+    from PIL import Image
 
-    image_file = genai.upload_file(image_path)
+    model = genai.GenerativeModel(model_name)
+    image = Image.open(image_path)
 
     for i in range(retry):
         try:
-            response = model.generate_content(
-                [
-                    prompt,
-                    image_file
-                ]
-            )
+            response = model.generate_content([prompt, image])
             return response.text
 
         except Exception as e:
@@ -97,12 +89,7 @@ def generate_image_with_retry(prompt, image_path, model_name=MODEL_MAIN, retry=3
 
     print("改用備援模型")
     model = genai.GenerativeModel(MODEL_BACKUP)
-    response = model.generate_content(
-        [
-            prompt,
-            image_file
-        ]
-    )
+    response = model.generate_content([prompt, image])
     return response.text
 
 
@@ -126,29 +113,29 @@ def main():
     )
 
     summary_agent = load_module(
-    "summary_agent",
-    "src/agents/summary_agent.py"
-)
+        "summary_agent",
+        "src/agents/summary_agent.py"
+    )
 
-compare_agent = load_module(
-    "compare_agent",
-    "src/agents/compare_agent.py"
-)
+    compare_agent = load_module(
+        "compare_agent",
+        "src/agents/compare_agent.py"
+    )
 
-implication_agent = load_module(
-    "implication_agent",
-    "src/agents/implication_agent.py"
-)
+    implication_agent = load_module(
+        "implication_agent",
+        "src/agents/implication_agent.py"
+    )
 
-writer_agent = load_module(
-    "writer_agent",
-    "src/agents/writer_agent.py"
-)
+    writer_agent = load_module(
+        "writer_agent",
+        "src/agents/writer_agent.py"
+    )
 
-vision_agent = load_module(
-    "vision_agent",
-    "src/agents/vision_agent.py"
-)
+    vision_agent = load_module(
+        "vision_agent",
+        "src/agents/vision_agent.py"
+    )
 
     print("Step 1：讀取 FOMC 原始資料")
 
@@ -187,8 +174,8 @@ vision_agent = load_module(
         dotplot_path_out,
         lambda: generate_image_with_retry(
             vision_agent.analyze_image(
-    "templates/fomc/00_fomc_dotplot_prompt.txt"
-),
+                "templates/fomc/00_fomc_dotplot_prompt.txt"
+            ),
             dotplot_path
         )
     )
@@ -199,13 +186,17 @@ vision_agent = load_module(
         summary_path,
         lambda: generate_with_retry(
             summary_agent.summarize(
-    "templates/fomc/01_fomc_summary_prompt.txt",
-    {
-        "本次FOMC聲明稿": statement_current,
-        "SEP與點陣圖資料": sep_text + "\n\n以下為點陣圖判讀結果：\n" + dotplot_summary,
-        "主席記者會內容": press_conference
-    }
-)
+                "templates/fomc/01_fomc_summary_prompt.txt",
+                {
+                    "本次FOMC聲明稿": statement_current,
+                    "SEP與點陣圖資料": (
+                        sep_text
+                        + "\n\n以下為點陣圖判讀結果：\n"
+                        + dotplot_summary
+                    ),
+                    "主席記者會內容": press_conference
+                }
+            )
         )
     )
 
@@ -214,13 +205,13 @@ vision_agent = load_module(
     fomc_compare = load_or_generate(
         compare_path,
         lambda: generate_with_retry(
-           compare_agent.compare(
-    "templates/fomc/02_fomc_compare_prompt.txt",
-    {
-        "本次FOMC聲明稿": statement_current,
-        "前次FOMC聲明稿": statement_previous
-    }
-)
+            compare_agent.compare(
+                "templates/fomc/02_fomc_compare_prompt.txt",
+                {
+                    "本次FOMC聲明稿": statement_current,
+                    "前次FOMC聲明稿": statement_previous
+                }
+            )
         )
     )
 
@@ -230,26 +221,25 @@ vision_agent = load_module(
         implication_path,
         lambda: generate_with_retry(
             implication_agent.analyze(
-    "templates/fomc/03_fomc_implication_prompt.txt",
-    {
-        "本次FOMC政策重點整理": fomc_summary,
-        "本次與前次FOMC聲明稿比較": fomc_compare
-    }
-)
+                "templates/fomc/03_fomc_implication_prompt.txt",
+                {
+                    "本次FOMC政策重點整理": fomc_summary,
+                    "本次與前次FOMC聲明稿比較": fomc_compare
+                }
+            )
         )
     )
 
     print("Step 6：產生 FOMC 即時晨報")
 
     morning_brief_prompt = writer_agent.write(
-    "templates/fomc/04_fomc_morning_brief_prompt.txt",
-    {
-        "本次FOMC政策重點整理": fomc_summary,
-        "本次與前次FOMC聲明稿比較": fomc_compare,
-        "本次FOMC政策意涵分析": fomc_implication,
-        "利率點陣圖判讀結果": dotplot_summary
-    }
-)
+        "templates/fomc/04_fomc_morning_brief_prompt.txt",
+        {
+            "本次FOMC政策重點整理": fomc_summary,
+            "本次與前次FOMC聲明稿比較": fomc_compare,
+            "本次FOMC政策意涵分析": fomc_implication,
+            "利率點陣圖判讀結果": dotplot_summary
+        }
     )
 
     morning_brief_text = generate_with_retry(
