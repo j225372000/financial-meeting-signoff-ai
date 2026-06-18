@@ -1,3 +1,4 @@
+%%writefile main_fomc.py
 import os
 import time
 import importlib.util
@@ -32,7 +33,6 @@ def read_pdf(path):
     with pdfplumber.open(path) as pdf:
         for page in pdf.pages:
             page_text = page.extract_text()
-
             if page_text:
                 texts.append(page_text)
 
@@ -61,7 +61,6 @@ def generate_with_retry(prompt, model_name=MODEL_MAIN, retry=3):
         try:
             response = model.generate_content(prompt)
             return response.text
-
         except Exception as e:
             print(f"第 {i + 1} 次失敗：{e}")
             time.sleep(30)
@@ -82,7 +81,6 @@ def generate_image_with_retry(prompt, image_path, model_name=MODEL_MAIN, retry=3
         try:
             response = model.generate_content([prompt, image])
             return response.text
-
         except Exception as e:
             print(f"第 {i + 1} 次失敗：{e}")
             time.sleep(30)
@@ -152,8 +150,6 @@ def main():
     )
 
     press_conference_path = f"{FOMC_INPUT_DIR}/press_conference.pdf"
-
-press_conference_path = f"{FOMC_INPUT_DIR}/press_conference.pdf"
 
     if os.path.exists(press_conference_path):
         press_conference = read_input(press_conference_path)
