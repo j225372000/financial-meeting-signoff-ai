@@ -153,11 +153,14 @@ def main():
 
     press_conference_path = f"{FOMC_INPUT_DIR}/press_conference.pdf"
 
-if os.path.exists(press_conference_path):
-    press_conference = read_input(press_conference_path)
-else:
-    print("未提供記者會逐字稿")
-    press_conference = ""
+press_conference_path = f"{FOMC_INPUT_DIR}/press_conference.pdf"
+
+    if os.path.exists(press_conference_path):
+        press_conference = read_input(press_conference_path)
+    else:
+        print("未提供記者會逐字稿")
+        press_conference = ""
+
     dotplot_path = f"{FOMC_INPUT_DIR}/dotplot.png"
 
     print("本次聲明稿字數：", len(statement_current))
