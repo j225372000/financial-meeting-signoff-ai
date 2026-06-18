@@ -1,4 +1,3 @@
-%%writefile main_fomc.py
 import os
 import time
 import importlib.util
