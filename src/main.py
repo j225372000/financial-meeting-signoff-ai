@@ -196,20 +196,26 @@ def main():
     print("Step 7：潤稿產生正式簽文")
 
     signoff_prompt = writer_agent.write(
-    "templates/05_generate_signoff_prompt.txt",
-    {
-        "draft_signoff_outline.txt": draft_outline,
-        "歷史簽文樣本風格": signoff_style
-    }
-)
+        "templates/05_generate_signoff_prompt.txt",
+        {
+            "draft_signoff_outline.txt": draft_outline,
+            "歷史簽文樣本風格": signoff_style
+        }
+    )
 
-final_signoff_text = generate_with_retry(signoff_prompt)
+    final_signoff_text = generate_with_retry(
+        signoff_prompt
+    )
 
     txt_path = f"{OUTPUT_DIR}/final_signoff.txt"
     docx_path = f"{OUTPUT_DIR}/final_signoff.docx"
 
     save_text(txt_path, final_signoff_text)
-    docx_writer.write_signoff_docx(final_signoff_text, docx_path)
+
+    docx_writer.write_signoff_docx(
+        final_signoff_text,
+        docx_path
+    )
 
     print("完成！")
     print(f"中間成果：{INTERMEDIATE_DIR}")
