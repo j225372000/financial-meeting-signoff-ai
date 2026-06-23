@@ -103,21 +103,35 @@ def load_signoff_samples(file_loader):
 def main():
     genai.configure(api_key=GOOGLE_API_KEY)
 
-    file_loader = load_module("file_loader", "src/utils/file_loader.py")
-    text_cleaner = load_module("text_cleaner", "src/utils/text_cleaner.py")
-    docx_writer = load_module("docx_writer", "src/utils/docx_writer.py")
-    signoff_builder = load_module("signoff_builder", "src/utils/signoff_builder.py")
+    file_loader = load_module(
+        "file_loader",
+        "src/utils/file_loader.py"
+    )
 
-    structure_agent = load_module("structure_agent", "src/agents/structure_agent.py")
-    summary_agent = load_module("summary_agent", "src/agents/summary_agent.py")
-    transcript_agent = load_module("transcript_agent", "src/transcript_agent.py")
-    qa_agent = load_module("qa_agent", "src/qa_agent.py")
-    writer_agent = load_module("writer_agent", "src/agents/writer_agent.py")
+    text_cleaner = load_module(
+        "text_cleaner",
+        "src/utils/text_cleaner.py"
+    )
+
+    docx_writer = load_module(
+        "docx_writer",
+        "src/utils/docx_writer.py"
+    )
+
+    extractor_agent = load_module(
+        "extractor_agent",
+        "src/agents/extractor_agent.py"
+    )
+
+    writer_agent = load_module(
+        "writer_agent",
+        "src/agents/writer_agent.py"
+    )
 
     print("Step 1：讀取原始資料")
 
     slide_file = find_single_file(SLIDE_DIR, [".pdf"])
-    transcript_file = find_single_file(TRANSCRIPT_DIR, [".docx"])
+    transcript_file = find_single_file(TRANSCRIPT_DIR, [".docx", ".txt"])
 
     print("使用簡報：", slide_file)
     print("使用逐字稿：", transcript_file)
@@ -132,80 +146,38 @@ def main():
     print("逐字稿字數：", len(transcript_text))
     print("歷史簽文字數：", len(signoff_style))
 
-    slide_structure_path = f"{INTERMEDIATE_DIR}/slide_structure.json"
-    slide_summary_path = f"{INTERMEDIATE_DIR}/slide_summary.json"
-    enhanced_summary_path = f"{INTERMEDIATE_DIR}/enhanced_summary.json"
-    qa_summary_path = f"{INTERMEDIATE_DIR}/qa_summary.json"
+    raw_text = f"""
+===== 簡報內容 =====
 
-    print("Step 2：取得 slide_structure.json")
-    slide_structure_json = load_or_generate(
-        slide_structure_path,
+{cleaned_slide}
+
+===== 逐字稿內容 =====
+
+{transcript_text}
+"""
+
+    extract_result_path = f"{INTERMEDIATE_DIR}/extract_result.json"
+
+    print("Step 2：執行 Extractor Agent")
+
+    extract_result = load_or_generate(
+        extract_result_path,
         lambda: generate_with_retry(
-            structure_agent.extract_slide_structure(cleaned_slide)
+            extractor_agent.extract(raw_text)
         )
     )
 
-    print("Step 3：取得 slide_summary.json")
-    slide_summary_json = load_or_generate(
-        slide_summary_path,
-        lambda: generate_with_retry(
-            summary_agent.summarize(
-                "templates/02_extract_slide_summary_prompt.txt",
-                {
-                    "slide_structure.json": slide_structure_json,
-                    "簡報文字": cleaned_slide
-                }
-            )
-        )
-    )
-
-    print("Step 4：取得 enhanced_summary.json")
-    enhanced_summary_json = load_or_generate(
-        enhanced_summary_path,
-        lambda: generate_with_retry(
-            transcript_agent.enhance_with_transcript(
-                slide_structure_json,
-                slide_summary_json,
-                transcript_text
-            )
-        )
-    )
-
-    print("Step 5：取得 qa_summary.json")
-    qa_summary_json = load_or_generate(
-        qa_summary_path,
-        lambda: generate_with_retry(
-            qa_agent.extract_qa(transcript_text)
-        )
-    )
-
-    print("Step 6：建立簽文草稿")
-
-    draft_outline = signoff_builder.build_signoff_outline(
-        slide_structure_json,
-        slide_summary_json,
-        enhanced_summary_json,
-        qa_summary_json
-    )
-
-    draft_outline_path = f"{INTERMEDIATE_DIR}/draft_signoff_outline.txt"
-    save_text(draft_outline_path, draft_outline)
-
-    print(f"簽文草稿已建立：{draft_outline_path}")
-
-    print("Step 7：潤稿產生正式簽文")
+    print("Step 3：產生正式簽文")
 
     signoff_prompt = writer_agent.write(
-        "templates/05_generate_signoff_prompt.txt",
+        "templates/writer_prompt.txt",
         {
-            "draft_signoff_outline.txt": draft_outline,
+            "extract_result.json": extract_result,
             "歷史簽文樣本風格": signoff_style
         }
     )
 
-    final_signoff_text = generate_with_retry(
-        signoff_prompt
-    )
+    final_signoff_text = generate_with_retry(signoff_prompt)
 
     txt_path = f"{OUTPUT_DIR}/final_signoff.txt"
     docx_path = f"{OUTPUT_DIR}/final_signoff.docx"
@@ -219,7 +191,7 @@ def main():
 
     print("完成！")
     print(f"中間成果：{INTERMEDIATE_DIR}")
-    print(f"簽文草稿：{draft_outline_path}")
+    print(f"萃取結果：{extract_result_path}")
     print(f"文字檔：{txt_path}")
     print(f"Word檔：{docx_path}")
 
