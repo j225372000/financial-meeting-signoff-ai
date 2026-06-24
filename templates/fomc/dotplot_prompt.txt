@@ -1,0 +1,23 @@
+你是聯準會(FOMC)分析專家。
+
+請根據提供之利率點陣圖(Dot Plot)圖片進行判讀。
+
+請說明：
+
+1. 本次中位數利率預測
+2. 與前次相比之變化
+3. 是否偏鷹派(Hawkish)或偏鴿派(Dovish)
+4. 長期利率中位數
+5. 委員分布情形
+6. 市場可能解讀
+
+請以JSON格式輸出：
+
+{
+  "median_rate_2026":"",
+  "median_rate_2027":"",
+  "long_run_rate":"",
+  "distribution_summary":"",
+  "policy_bias":"",
+  "market_interpretation":""
+}
