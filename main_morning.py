@@ -4,6 +4,8 @@ import importlib.util
 from pathlib import Path
 
 import google.generativeai as genai
+from docx import Document
+import pdfplumber
 
 
 GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
@@ -33,6 +35,64 @@ def save_text(path, content):
 
 def read_text(path):
     return Path(path).read_text(encoding="utf-8")
+
+
+def read_text_safely(path):
+    encodings = [
+        "utf-8",
+        "utf-8-sig",
+        "cp950",
+        "big5",
+        "latin-1"
+    ]
+
+    for enc in encodings:
+        try:
+            return Path(path).read_text(encoding=enc)
+        except UnicodeDecodeError:
+            continue
+
+    raise ValueError(f"無法判斷檔案編碼：{path}")
+
+
+def read_docx(path):
+    doc = Document(path)
+    texts = []
+
+    for paragraph in doc.paragraphs:
+        if paragraph.text.strip():
+            texts.append(paragraph.text.strip())
+
+    return "\n".join(texts)
+
+
+def read_pdf(path):
+    texts = []
+
+    with pdfplumber.open(path) as pdf:
+        for page in pdf.pages:
+            page_text = page.extract_text()
+
+            if page_text:
+                texts.append(page_text)
+
+    return "\n".join(texts)
+
+
+def read_file(path):
+    path = Path(path)
+    suffix = path.suffix.lower()
+
+    if suffix in [".txt", ".md", ".json"]:
+        return read_text_safely(path)
+
+    if suffix == ".docx":
+        return read_docx(path)
+
+    if suffix == ".pdf":
+        return read_pdf(path)
+
+    raise ValueError(f"不支援格式：{suffix}")
 
 
 def load_or_generate(path, generator_func):
@@ -73,16 +133,23 @@ def load_all_news(folder):
         p for p in folder_path.iterdir()
         if p.is_file()
         and not p.name.startswith("~$")
-        and p.suffix.lower() in [".txt", ".md"]
+        and p.suffix.lower() in [
+            ".txt",
+            ".md",
+            ".docx",
+            ".pdf"
+        ]
     ])
 
     if not news_files:
-        raise FileNotFoundError(f"新聞資料夾內沒有 .txt 或 .md 檔案：{folder}")
+        raise FileNotFoundError(
+            f"新聞資料夾內沒有 .txt、.md、.docx 或 .pdf 檔案：{folder}"
+        )
 
     contents = []
 
     for file in news_files:
-        text = file.read_text(encoding="utf-8")
+        text = read_file(file)
         contents.append(f"\n\n===== {file.name} =====\n{text}")
 
     return "\n".join(contents)
@@ -99,7 +166,13 @@ def load_knowledge_folder(folder):
         p for p in folder_path.glob("**/*")
         if p.is_file()
         and not p.name.startswith("~$")
-        and p.suffix.lower() in [".txt", ".md", ".json"]
+        and p.suffix.lower() in [
+            ".txt",
+            ".md",
+            ".json",
+            ".docx",
+            ".pdf"
+        ]
     ])
 
     if not files:
@@ -110,7 +183,7 @@ def load_knowledge_folder(folder):
 
     for file in files:
         try:
-            text = file.read_text(encoding="utf-8")
+            text = read_file(file)
             contents.append(f"\n\n===== {file.name} =====\n{text}")
         except Exception as e:
             print(f"讀取知識庫檔案失敗：{file}，原因：{e}")
