@@ -2,12 +2,18 @@ from pathlib import Path
 
 
 def load_prompt(prompt_path: str) -> str:
-    return Path(prompt_path).read_text(encoding="utf-8")
+    return Path(prompt_path).read_text(
+        encoding="utf-8"
+    )
 
 
-def extract(raw_text: str) -> str:
+def extract(
+    raw_text: str,
+    prompt_path: str
+) -> str:
+
     prompt_template = load_prompt(
-        "templates/extractor_prompt.txt"
+        prompt_path
     )
 
     return f"""
