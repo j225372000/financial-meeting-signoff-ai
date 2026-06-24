@@ -5,10 +5,7 @@ def load_prompt(prompt_path: str) -> str:
     return Path(prompt_path).read_text(encoding="utf-8")
 
 
-def build_writer_prompt(
-    prompt_path: str,
-    sections: dict
-) -> str:
+def build_writer_prompt(prompt_path: str, sections: dict) -> str:
     prompt_template = load_prompt(prompt_path)
 
     content = [prompt_template]
@@ -19,11 +16,5 @@ def build_writer_prompt(
     return "".join(content)
 
 
-def write(
-    prompt_path: str,
-    sections: dict
-) -> str:
-    return build_writer_prompt(
-        prompt_path,
-        sections
-    )
+def write(prompt_path: str, sections: dict) -> str:
+    return build_writer_prompt(prompt_path, sections)
