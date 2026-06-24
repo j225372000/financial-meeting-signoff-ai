@@ -53,6 +53,17 @@ def save_text(path, content):
     Path(path).write_text(content, encoding="utf-8")
 
 
+def load_or_generate(path, generator_func):
+    if os.path.exists(path):
+        print(f"已存在，直接讀取：{path}")
+        return Path(path).read_text(encoding="utf-8")
+
+    print(f"不存在，開始產生：{path}")
+    result = generator_func()
+    save_text(path, result)
+    return result
+
+
 def generate_with_retry(prompt, model_name=MODEL_MAIN, retry=3):
     model = genai.GenerativeModel(model_name)
 
@@ -90,17 +101,6 @@ def generate_image_with_retry(prompt, image_path, model_name=MODEL_MAIN, retry=3
     return response.text
 
 
-def load_or_generate(path, generator_func):
-    if os.path.exists(path):
-        print(f"已存在，直接讀取：{path}")
-        return Path(path).read_text(encoding="utf-8")
-
-    print(f"不存在，開始產生：{path}")
-    result = generator_func()
-    save_text(path, result)
-    return result
-
-
 def main():
     genai.configure(api_key=GOOGLE_API_KEY)
 
@@ -109,9 +109,9 @@ def main():
         "src/utils/docx_writer.py"
     )
 
-    summary_agent = load_module(
-        "summary_agent",
-        "src/agents/summary_agent.py"
+    extractor_agent = load_module(
+        "extractor_agent",
+        "src/agents/extractor_agent.py"
     )
 
     compare_agent = load_module(
@@ -119,9 +119,9 @@ def main():
         "src/agents/compare_agent.py"
     )
 
-    implication_agent = load_module(
-        "implication_agent",
-        "src/agents/implication_agent.py"
+    analysis_agent = load_module(
+        "analysis_agent",
+        "src/agents/analysis_agent.py"
     )
 
     writer_agent = load_module(
@@ -165,9 +165,9 @@ def main():
     print("點陣圖檔案：", dotplot_path)
 
     dotplot_path_out = f"{FOMC_INTERMEDIATE_DIR}/dotplot_summary.json"
-    summary_path = f"{FOMC_INTERMEDIATE_DIR}/fomc_summary.json"
-    compare_path = f"{FOMC_INTERMEDIATE_DIR}/fomc_compare.json"
-    implication_path = f"{FOMC_INTERMEDIATE_DIR}/fomc_implication.json"
+    extract_path = f"{FOMC_INTERMEDIATE_DIR}/extract_result.json"
+    compare_path = f"{FOMC_INTERMEDIATE_DIR}/compare_result.json"
+    analysis_path = f"{FOMC_INTERMEDIATE_DIR}/analysis_result.json"
 
     print("Step 2：判讀 FOMC Dot Plot")
 
@@ -181,27 +181,37 @@ def main():
         )
     )
 
-    print("Step 3：產生 FOMC Summary")
+    print("Step 3：執行 FOMC Extractor Agent")
 
-    fomc_summary = load_or_generate(
-        summary_path,
+    raw_fomc_text = f"""
+===== 本次FOMC聲明稿 =====
+
+{statement_current}
+
+===== SEP資料 =====
+
+{sep_text}
+
+===== Dot Plot判讀 =====
+
+{dotplot_summary}
+
+===== Powell記者會 =====
+
+{press_conference}
+"""
+
+    fomc_extract = load_or_generate(
+        extract_path,
         lambda: generate_with_retry(
-            summary_agent.summarize(
-                "templates/fomc/01_fomc_summary_prompt.txt",
-                {
-                    "本次FOMC聲明稿": statement_current,
-                    "SEP與點陣圖資料": (
-                        sep_text
-                        + "\n\n以下為點陣圖判讀結果：\n"
-                        + dotplot_summary
-                    ),
-                    "主席記者會內容": press_conference
-                }
+            extractor_agent.extract(
+                raw_fomc_text,
+                "templates/fomc/01_fomc_extractor_prompt.txt"
             )
         )
     )
 
-    print("Step 4：產生 FOMC Statement Compare")
+    print("Step 4：執行 FOMC Compare Agent")
 
     fomc_compare = load_or_generate(
         compare_path,
@@ -216,16 +226,16 @@ def main():
         )
     )
 
-    print("Step 5：產生 FOMC Implication")
+    print("Step 5：執行 FOMC Analysis Agent")
 
-    fomc_implication = load_or_generate(
-        implication_path,
+    fomc_analysis = load_or_generate(
+        analysis_path,
         lambda: generate_with_retry(
-            implication_agent.analyze(
-                "templates/fomc/03_fomc_implication_prompt.txt",
+            analysis_agent.analyze(
+                "templates/fomc/03_fomc_analysis_prompt.txt",
                 {
-                    "本次FOMC政策重點整理": fomc_summary,
-                    "本次與前次FOMC聲明稿比較": fomc_compare
+                    "FOMC政策重點": fomc_extract,
+                    "聲明稿比較": fomc_compare
                 }
             )
         )
@@ -234,12 +244,12 @@ def main():
     print("Step 6：產生 FOMC 即時晨報")
 
     morning_brief_prompt = writer_agent.write(
-        "templates/fomc/04_fomc_morning_brief_prompt.txt",
+        "templates/fomc/04_fomc_writer_prompt.txt",
         {
-            "本次FOMC政策重點整理": fomc_summary,
-            "本次與前次FOMC聲明稿比較": fomc_compare,
-            "本次FOMC政策意涵分析": fomc_implication,
-            "利率點陣圖判讀結果": dotplot_summary
+            "FOMC政策重點": fomc_extract,
+            "聲明稿比較": fomc_compare,
+            "政策意涵分析": fomc_analysis,
+            "點陣圖判讀": dotplot_summary
         }
     )
 
@@ -260,6 +270,9 @@ def main():
     print("完成！")
     print(f"FOMC中間成果：{FOMC_INTERMEDIATE_DIR}")
     print(f"點陣圖判讀：{dotplot_path_out}")
+    print(f"政策重點：{extract_path}")
+    print(f"聲明稿比較：{compare_path}")
+    print(f"政策分析：{analysis_path}")
     print(f"文字檔：{txt_path}")
     print(f"Word檔：{docx_path}")
 
