@@ -175,7 +175,7 @@ def main():
         dotplot_path_out,
         lambda: generate_image_with_retry(
             vision_agent.analyze_image(
-                "templates/fomc/00_fomc_dotplot_prompt.txt"
+                "templates/fomc/dotplot_prompt.txt"
             ),
             dotplot_path
         )
@@ -206,7 +206,7 @@ def main():
         lambda: generate_with_retry(
             extractor_agent.extract(
                 raw_fomc_text,
-                "templates/fomc/01_fomc_extractor_prompt.txt"
+                "templates/fomc/extractor_prompt.txt"
             )
         )
     )
@@ -217,7 +217,7 @@ def main():
         compare_path,
         lambda: generate_with_retry(
             compare_agent.compare(
-                "templates/fomc/02_fomc_compare_prompt.txt",
+                "templates/fomc/compare_prompt.txt",
                 {
                     "本次FOMC聲明稿": statement_current,
                     "前次FOMC聲明稿": statement_previous
@@ -232,7 +232,7 @@ def main():
         analysis_path,
         lambda: generate_with_retry(
             analysis_agent.analyze(
-                "templates/fomc/03_fomc_analysis_prompt.txt",
+                "templates/fomc/analysis_prompt.txt",
                 {
                     "FOMC政策重點": fomc_extract,
                     "聲明稿比較": fomc_compare
@@ -244,7 +244,7 @@ def main():
     print("Step 6：產生 FOMC 即時晨報")
 
     morning_brief_prompt = writer_agent.write(
-        "templates/fomc/04_fomc_writer_prompt.txt",
+        "templates/fomc/writer_prompt.txt",
         {
             "FOMC政策重點": fomc_extract,
             "聲明稿比較": fomc_compare,
