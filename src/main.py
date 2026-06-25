@@ -13,8 +13,8 @@ SLIDE_DIR = f"{BASE_DIR}/input/slides"
 TRANSCRIPT_DIR = f"{BASE_DIR}/input/transcript"
 SIGNOFF_SAMPLE_DIR = f"{BASE_DIR}/input/signoff_samples"
 
-INTERMEDIATE_DIR = f"{BASE_DIR}/intermediate"
-OUTPUT_DIR = f"{BASE_DIR}/output"
+INTERMEDIATE_DIR = f"{BASE_DIR}/intermediate/meeting"
+OUTPUT_DIR = f"{BASE_DIR}/output/meeting"
 
 MODEL_MAIN = "models/gemini-2.5-flash-lite"
 MODEL_BACKUP = "models/gemini-2.5-flash-lite"
@@ -29,6 +29,7 @@ def load_module(module_name, file_path):
 
 def save_text(path, content):
     os.makedirs(os.path.dirname(path), exist_ok=True)
+
     with open(path, "w", encoding="utf-8") as f:
         f.write(content)
 
@@ -128,10 +129,17 @@ def main():
         "src/agents/writer_agent.py"
     )
 
-    print("Step 1：讀取原始資料")
+    print("Step 1：讀取會議紀錄原始資料")
 
-    slide_file = find_single_file(SLIDE_DIR, [".pdf"])
-    transcript_file = find_single_file(TRANSCRIPT_DIR, [".docx", ".txt"])
+    slide_file = find_single_file(
+        SLIDE_DIR,
+        [".pdf"]
+    )
+
+    transcript_file = find_single_file(
+        TRANSCRIPT_DIR,
+        [".docx", ".txt"]
+    )
 
     print("使用簡報：", slide_file)
     print("使用逐字稿：", transcript_file)
@@ -158,26 +166,31 @@ def main():
 
     extract_result_path = f"{INTERMEDIATE_DIR}/extract_result.json"
 
-    print("Step 2：執行 Extractor Agent")
+    print("Step 2：執行 Meeting Extractor Agent")
 
     extract_result = load_or_generate(
         extract_result_path,
         lambda: generate_with_retry(
-            extractor_agent.extract(raw_text)
+            extractor_agent.extract(
+                raw_text,
+                "templates/meeting/extractor_prompt.txt"
+            )
         )
     )
 
-    print("Step 3：產生正式簽文")
+    print("Step 3：執行 Meeting Writer Agent")
 
     signoff_prompt = writer_agent.write(
-        "templates/writer_prompt.txt",
+        "templates/meeting/writer_prompt.txt",
         {
             "extract_result.json": extract_result,
             "歷史簽文樣本風格": signoff_style
         }
     )
 
-    final_signoff_text = generate_with_retry(signoff_prompt)
+    final_signoff_text = generate_with_retry(
+        signoff_prompt
+    )
 
     txt_path = f"{OUTPUT_DIR}/final_signoff.txt"
     docx_path = f"{OUTPUT_DIR}/final_signoff.docx"
