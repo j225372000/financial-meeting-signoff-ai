@@ -12,6 +12,9 @@ GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
 
 BASE_DIR = "/content/drive/MyDrive/會議紀錄自動化"
 
+PROJECT_ROOT = Path(__file__).resolve().parent
+MORNING_TEMPLATE_DIR = PROJECT_ROOT / "templates" / "morning"
+
 MORNING_INPUT_DIR = f"{BASE_DIR}/input/morning/news"
 MORNING_KNOWLEDGE_DIR = f"{BASE_DIR}/knowledge/morning"
 MORNING_INTERMEDIATE_DIR = f"{BASE_DIR}/intermediate/morning"
@@ -38,13 +41,7 @@ def read_text(path):
 
 
 def read_text_safely(path):
-    encodings = [
-        "utf-8",
-        "utf-8-sig",
-        "cp950",
-        "big5",
-        "latin-1"
-    ]
+    encodings = ["utf-8", "utf-8-sig", "cp950", "big5", "latin-1"]
 
     for enc in encodings:
         try:
@@ -133,12 +130,7 @@ def load_all_news(folder):
         p for p in folder_path.iterdir()
         if p.is_file()
         and not p.name.startswith("~$")
-        and p.suffix.lower() in [
-            ".txt",
-            ".md",
-            ".docx",
-            ".pdf"
-        ]
+        and p.suffix.lower() in [".txt", ".md", ".docx", ".pdf"]
     ])
 
     if not news_files:
@@ -166,13 +158,7 @@ def load_knowledge_folder(folder):
         p for p in folder_path.glob("**/*")
         if p.is_file()
         and not p.name.startswith("~$")
-        and p.suffix.lower() in [
-            ".txt",
-            ".md",
-            ".json",
-            ".docx",
-            ".pdf"
-        ]
+        and p.suffix.lower() in [".txt", ".md", ".json", ".docx", ".pdf"]
     ])
 
     if not files:
@@ -196,22 +182,22 @@ def main():
 
     classifier_agent = load_module(
         "classifier_agent",
-        "src/agents/classifier_agent.py"
+        str(PROJECT_ROOT / "src" / "agents" / "classifier_agent.py")
     )
 
     extractor_agent = load_module(
         "extractor_agent",
-        "src/agents/extractor_agent.py"
+        str(PROJECT_ROOT / "src" / "agents" / "extractor_agent.py")
     )
 
     knowledge_retriever_agent = load_module(
         "knowledge_retriever_agent",
-        "src/agents/knowledge_retriever_agent.py"
+        str(PROJECT_ROOT / "src" / "agents" / "knowledge_retriever_agent.py")
     )
 
     writer_agent = load_module(
         "writer_agent",
-        "src/agents/writer_agent.py"
+        str(PROJECT_ROOT / "src" / "agents" / "writer_agent.py")
     )
 
     print("Step 1：讀取晨報新聞與知識庫")
@@ -233,7 +219,7 @@ def main():
         lambda: generate_with_retry(
             classifier_agent.classify(
                 news_text,
-                "templates/morning/classifier_prompt.txt"
+                str(MORNING_TEMPLATE_DIR / "classifier_prompt.txt")
             )
         )
     )
@@ -245,7 +231,7 @@ def main():
         lambda: generate_with_retry(
             extractor_agent.extract(
                 news_text,
-                "templates/morning/extractor_prompt.txt"
+                str(MORNING_TEMPLATE_DIR / "extractor_prompt.txt")
             )
         )
     )
@@ -258,7 +244,7 @@ def main():
             knowledge_retriever_agent.retrieve(
                 news_extract,
                 knowledge_text,
-                "templates/morning/knowledge_retriever_prompt.txt"
+                str(MORNING_TEMPLATE_DIR / "knowledge_retriever_prompt.txt")
             )
         )
     )
@@ -266,7 +252,7 @@ def main():
     print("Step 5：產生晨報講稿")
 
     morning_prompt = writer_agent.write(
-        "templates/morning/writer_prompt.txt",
+        str(MORNING_TEMPLATE_DIR / "writer_prompt.txt"),
         {
             "新聞分類結果": classify_result,
             "新聞萃取結果": news_extract,
