@@ -1,6 +1,7 @@
 import os
 import time
 import importlib.util
+from pathlib import Path
 
 import google.generativeai as genai
 
@@ -8,6 +9,9 @@ import google.generativeai as genai
 GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
 
 BASE_DIR = "/content/drive/MyDrive/會議紀錄自動化"
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+MEETING_TEMPLATE_DIR = PROJECT_ROOT / "templates" / "meeting"
 
 SLIDE_DIR = f"{BASE_DIR}/input/slides"
 TRANSCRIPT_DIR = f"{BASE_DIR}/input/transcript"
@@ -21,14 +25,20 @@ MODEL_BACKUP = "models/gemini-2.5-flash-lite"
 
 
 def load_module(module_name, file_path):
-    spec = importlib.util.spec_from_file_location(module_name, file_path)
+    spec = importlib.util.spec_from_file_location(
+        module_name,
+        file_path
+    )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
 
 
 def save_text(path, content):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
+    os.makedirs(
+        os.path.dirname(path),
+        exist_ok=True
+    )
 
     with open(path, "w", encoding="utf-8") as f:
         f.write(content)
@@ -50,7 +60,11 @@ def load_or_generate(path, generator_func):
     return result
 
 
-def generate_with_retry(prompt, model_name=MODEL_MAIN, retry=3):
+def generate_with_retry(
+    prompt,
+    model_name=MODEL_MAIN,
+    retry=3
+):
     model = genai.GenerativeModel(model_name)
 
     for i in range(retry):
@@ -74,14 +88,23 @@ def find_single_file(folder, extensions):
         if file_name.startswith("~$"):
             continue
 
-        if any(file_name.lower().endswith(ext) for ext in extensions):
-            files.append(os.path.join(folder, file_name))
+        if any(
+            file_name.lower().endswith(ext)
+            for ext in extensions
+        ):
+            files.append(
+                os.path.join(folder, file_name)
+            )
 
     if len(files) == 0:
-        raise FileNotFoundError(f"找不到檔案：{folder}")
+        raise FileNotFoundError(
+            f"找不到檔案：{folder}"
+        )
 
     if len(files) > 1:
-        raise ValueError(f"{folder} 裡有超過一個檔案：\n{files}")
+        raise ValueError(
+            f"{folder} 裡有超過一個檔案：\n{files}"
+        )
 
     return files[0]
 
@@ -94,9 +117,14 @@ def load_signoff_samples(file_loader):
             continue
 
         if file_name.endswith(".docx"):
-            file_path = os.path.join(SIGNOFF_SAMPLE_DIR, file_name)
+            file_path = os.path.join(
+                SIGNOFF_SAMPLE_DIR,
+                file_name
+            )
             text = file_loader.load_file(file_path)
-            texts.append(f"\n\n===== {file_name} =====\n{text}")
+            texts.append(
+                f"\n\n===== {file_name} =====\n{text}"
+            )
 
     return "\n".join(texts)
 
@@ -106,27 +134,27 @@ def main():
 
     file_loader = load_module(
         "file_loader",
-        "src/utils/file_loader.py"
+        str(PROJECT_ROOT / "src" / "utils" / "file_loader.py")
     )
 
     text_cleaner = load_module(
         "text_cleaner",
-        "src/utils/text_cleaner.py"
+        str(PROJECT_ROOT / "src" / "utils" / "text_cleaner.py")
     )
 
     docx_writer = load_module(
         "docx_writer",
-        "src/utils/docx_writer.py"
+        str(PROJECT_ROOT / "src" / "utils" / "docx_writer.py")
     )
 
     extractor_agent = load_module(
         "extractor_agent",
-        "src/agents/extractor_agent.py"
+        str(PROJECT_ROOT / "src" / "agents" / "extractor_agent.py")
     )
 
     writer_agent = load_module(
         "writer_agent",
-        "src/agents/writer_agent.py"
+        str(PROJECT_ROOT / "src" / "agents" / "writer_agent.py")
     )
 
     print("Step 1：讀取會議紀錄原始資料")
@@ -148,7 +176,9 @@ def main():
     transcript_text = file_loader.load_file(transcript_file)
     signoff_style = load_signoff_samples(file_loader)
 
-    cleaned_slide = text_cleaner.clean_slide_text(slide_text)
+    cleaned_slide = text_cleaner.clean_slide_text(
+        slide_text
+    )
 
     print("簡報字數：", len(cleaned_slide))
     print("逐字稿字數：", len(transcript_text))
@@ -164,7 +194,9 @@ def main():
 {transcript_text}
 """
 
-    extract_result_path = f"{INTERMEDIATE_DIR}/extract_result.json"
+    extract_result_path = (
+        f"{INTERMEDIATE_DIR}/extract_result.json"
+    )
 
     print("Step 2：執行 Meeting Extractor Agent")
 
@@ -173,7 +205,10 @@ def main():
         lambda: generate_with_retry(
             extractor_agent.extract(
                 raw_text,
-                "templates/meeting/extractor_prompt.txt"
+                str(
+                    MEETING_TEMPLATE_DIR
+                    / "extractor_prompt.txt"
+                )
             )
         )
     )
@@ -181,7 +216,10 @@ def main():
     print("Step 3：執行 Meeting Writer Agent")
 
     signoff_prompt = writer_agent.write(
-        "templates/meeting/writer_prompt.txt",
+        str(
+            MEETING_TEMPLATE_DIR
+            / "writer_prompt.txt"
+        ),
         {
             "extract_result.json": extract_result,
             "歷史簽文樣本風格": signoff_style
@@ -195,7 +233,10 @@ def main():
     txt_path = f"{OUTPUT_DIR}/final_signoff.txt"
     docx_path = f"{OUTPUT_DIR}/final_signoff.docx"
 
-    save_text(txt_path, final_signoff_text)
+    save_text(
+        txt_path,
+        final_signoff_text
+    )
 
     docx_writer.write_signoff_docx(
         final_signoff_text,
