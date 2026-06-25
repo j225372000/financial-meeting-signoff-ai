@@ -11,6 +11,9 @@ GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
 
 BASE_DIR = "/content/drive/MyDrive/會議紀錄自動化"
 
+PROJECT_ROOT = Path(__file__).resolve().parent
+FOMC_TEMPLATE_DIR = PROJECT_ROOT / "templates" / "fomc"
+
 FOMC_INPUT_DIR = f"{BASE_DIR}/input/fomc"
 FOMC_INTERMEDIATE_DIR = f"{BASE_DIR}/intermediate/fomc"
 FOMC_OUTPUT_DIR = f"{BASE_DIR}/output/fomc"
@@ -106,32 +109,32 @@ def main():
 
     docx_writer = load_module(
         "docx_writer",
-        "src/utils/docx_writer.py"
+        str(PROJECT_ROOT / "src" / "utils" / "docx_writer.py")
     )
 
     extractor_agent = load_module(
         "extractor_agent",
-        "src/agents/extractor_agent.py"
+        str(PROJECT_ROOT / "src" / "agents" / "extractor_agent.py")
     )
 
     compare_agent = load_module(
         "compare_agent",
-        "src/agents/compare_agent.py"
+        str(PROJECT_ROOT / "src" / "agents" / "compare_agent.py")
     )
 
     analysis_agent = load_module(
         "analysis_agent",
-        "src/agents/analysis_agent.py"
+        str(PROJECT_ROOT / "src" / "agents" / "analysis_agent.py")
     )
 
     writer_agent = load_module(
         "writer_agent",
-        "src/agents/writer_agent.py"
+        str(PROJECT_ROOT / "src" / "agents" / "writer_agent.py")
     )
 
     vision_agent = load_module(
         "vision_agent",
-        "src/agents/vision_agent.py"
+        str(PROJECT_ROOT / "src" / "agents" / "vision_agent.py")
     )
 
     print("Step 1：讀取 FOMC 原始資料")
@@ -175,7 +178,7 @@ def main():
         dotplot_path_out,
         lambda: generate_image_with_retry(
             vision_agent.analyze_image(
-                "templates/fomc/dotplot_prompt.txt"
+                str(FOMC_TEMPLATE_DIR / "dotplot_prompt.txt")
             ),
             dotplot_path
         )
@@ -206,7 +209,7 @@ def main():
         lambda: generate_with_retry(
             extractor_agent.extract(
                 raw_fomc_text,
-                "templates/fomc/extractor_prompt.txt"
+                str(FOMC_TEMPLATE_DIR / "extractor_prompt.txt")
             )
         )
     )
@@ -217,7 +220,7 @@ def main():
         compare_path,
         lambda: generate_with_retry(
             compare_agent.compare(
-                "templates/fomc/compare_prompt.txt",
+                str(FOMC_TEMPLATE_DIR / "compare_prompt.txt"),
                 {
                     "本次FOMC聲明稿": statement_current,
                     "前次FOMC聲明稿": statement_previous
@@ -232,7 +235,7 @@ def main():
         analysis_path,
         lambda: generate_with_retry(
             analysis_agent.analyze(
-                "templates/fomc/analysis_prompt.txt",
+                str(FOMC_TEMPLATE_DIR / "analysis_prompt.txt"),
                 {
                     "FOMC政策重點": fomc_extract,
                     "聲明稿比較": fomc_compare
@@ -244,7 +247,7 @@ def main():
     print("Step 6：產生 FOMC 即時晨報")
 
     morning_brief_prompt = writer_agent.write(
-        "templates/fomc/writer_prompt.txt",
+        str(FOMC_TEMPLATE_DIR / "writer_prompt.txt"),
         {
             "FOMC政策重點": fomc_extract,
             "聲明稿比較": fomc_compare,
