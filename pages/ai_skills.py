@@ -1,6 +1,6 @@
 import streamlit as st
 
-st.title("🧠 AI Skills")
+st.title("ai_skills")
 st.caption("管理 AI 能力。V1 先作為 Skill 清單，暫不開放編輯。")
 
 skills = [
