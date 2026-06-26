@@ -1,68 +1,53 @@
-import subprocess
-from pathlib import Path
-
 import streamlit as st
 
-
-PROJECT_ROOT = Path(__file__).resolve().parent
-
 st.set_page_config(
-    page_title="金融 AI 工作平台",
+    page_title="Financial AI Toolbox",
     layout="wide"
 )
 
-st.title("金融 AI 工作平台")
+st.title("Financial AI Toolbox")
+st.caption("把重複性的金融工作，做成可一鍵執行的 AI 工具。")
 
-job = st.selectbox(
-    "選擇工作",
-    [
-        "會議紀錄簽文",
-        "FOMC 即時晨報",
-        "每日金融晨報"
-    ]
-)
+st.divider()
 
-if job == "會議紀錄簽文":
-    command = ["python", "src/main.py"]
-    output_file = "/content/drive/MyDrive/會議紀錄自動化/output/meeting/final_signoff.docx"
+col1, col2 = st.columns(2)
 
-elif job == "FOMC 即時晨報":
-    command = ["python", "main_fomc.py"]
-    output_file = "/content/drive/MyDrive/會議紀錄自動化/output/fomc/fomc_morning_brief.docx"
+with col1:
+    st.subheader("✍️ Writing Toolbox")
+    st.write("金融專業潤飾、公文、摘要、市場分析、翻譯。")
+    st.page_link(
+        "pages/1_✍️_Writing_Toolbox.py",
+        label="進入 Writing Toolbox",
+        icon="✍️"
+    )
 
-else:
-    command = ["python", "main_morning.py"]
-    output_file = "/content/drive/MyDrive/會議紀錄自動化/output/morning/morning_brief.txt"
+with col2:
+    st.subheader("⚙️ Automation")
+    st.write("會議紀錄、FOMC、每日晨報等固定流程。")
+    st.page_link(
+        "pages/2_⚙️_Automation.py",
+        label="進入 Automation",
+        icon="⚙️"
+    )
 
+st.divider()
 
-st.write("目前執行指令：")
+col3, col4 = st.columns(2)
 
-st.code(" ".join(command))
+with col3:
+    st.subheader("🧠 AI Skills")
+    st.write("管理 AI 能力、Prompt、模型與版本。")
+    st.page_link(
+        "pages/3_🧠_AI_Skills.py",
+        label="進入 AI Skills",
+        icon="🧠"
+    )
 
-if st.button("開始執行"):
-    with st.spinner("執行中，請稍候..."):
-        result = subprocess.run(
-            command,
-            cwd=PROJECT_ROOT,
-            capture_output=True,
-            text=True
-        )
-
-    st.subheader("執行結果")
-    st.text(result.stdout)
-
-    if result.stderr:
-        st.subheader("錯誤訊息")
-        st.error(result.stderr)
-
-    if Path(output_file).exists():
-        st.success("已產生輸出檔案")
-
-        with open(output_file, "rb") as f:
-            st.download_button(
-                label="下載結果",
-                data=f,
-                file_name=Path(output_file).name
-            )
-    else:
-        st.warning("尚未找到輸出檔案")
+with col4:
+    st.subheader("⚙️ Settings")
+    st.write("API、Google Drive、模型與系統設定。")
+    st.page_link(
+        "pages/4_⚙️_Settings.py",
+        label="進入 Settings",
+        icon="⚙️"
+    )
