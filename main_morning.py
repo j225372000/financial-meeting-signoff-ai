@@ -1,4 +1,5 @@
 import os
+import re
 import time
 import importlib.util
 from pathlib import Path
@@ -18,6 +19,7 @@ MORNING_TEMPLATE_DIR = PROJECT_ROOT / "templates" / "morning"
 MORNING_INPUT_DIR = f"{BASE_DIR}/input/morning/news"
 MORNING_KNOWLEDGE_DIR = f"{BASE_DIR}/knowledge/morning"
 MORNING_INTERMEDIATE_DIR = f"{BASE_DIR}/intermediate/morning"
+MORNING_ITEMS_DIR = f"{MORNING_INTERMEDIATE_DIR}/items"
 MORNING_OUTPUT_DIR = f"{BASE_DIR}/output/morning"
 
 MODEL_MAIN = "models/gemini-2.5-flash-lite"
@@ -92,35 +94,7 @@ def read_file(path):
     raise ValueError(f"不支援格式：{suffix}")
 
 
-def load_or_generate(path, generator_func):
-    if os.path.exists(path):
-        print(f"已存在，直接讀取：{path}")
-        return read_text(path)
-
-    print(f"不存在，開始產生：{path}")
-    result = generator_func()
-    save_text(path, result)
-    return result
-
-
-def generate_with_retry(prompt, model_name=MODEL_MAIN, retry=3):
-    model = genai.GenerativeModel(model_name)
-
-    for i in range(retry):
-        try:
-            response = model.generate_content(prompt)
-            return response.text
-        except Exception as e:
-            print(f"第 {i + 1} 次失敗：{e}")
-            time.sleep(30)
-
-    print("改用備援模型")
-    model = genai.GenerativeModel(MODEL_BACKUP)
-    response = model.generate_content(prompt)
-    return response.text
-
-
-def load_all_news(folder):
+def list_news_files(folder):
     folder_path = Path(folder)
 
     if not folder_path.exists():
@@ -138,13 +112,7 @@ def load_all_news(folder):
             f"新聞資料夾內沒有 .txt、.md、.docx 或 .pdf 檔案：{folder}"
         )
 
-    contents = []
-
-    for file in news_files:
-        text = read_file(file)
-        contents.append(f"\n\n===== {file.name} =====\n{text}")
-
-    return "\n".join(contents)
+    return news_files
 
 
 def load_knowledge_folder(folder):
@@ -177,6 +145,49 @@ def load_knowledge_folder(folder):
     return "\n".join(contents)
 
 
+def load_or_generate(path, generator_func):
+    if os.path.exists(path):
+        print(f"已存在，直接讀取：{path}")
+        return read_text(path)
+
+    print(f"不存在，開始產生：{path}")
+    result = generator_func()
+    save_text(path, result)
+    return result
+
+
+def generate_with_retry(prompt, model_name=MODEL_MAIN, retry=3):
+    model = genai.GenerativeModel(model_name)
+
+    for i in range(retry):
+        try:
+            response = model.generate_content(prompt)
+            return response.text
+        except Exception as e:
+            print(f"第 {i + 1} 次失敗：{e}")
+            time.sleep(30)
+
+    print("改用備援模型")
+    model = genai.GenerativeModel(MODEL_BACKUP)
+    response = model.generate_content(prompt)
+    return response.text
+
+
+def safe_name(file_path):
+    stem = Path(file_path).stem
+    stem = re.sub(r"[^\w\u4e00-\u9fff-]+", "_", stem)
+    stem = stem.strip("_")
+    return stem or "news"
+
+
+def build_news_block(file_name, text):
+    return f"""
+===== 新聞檔案：{file_name} =====
+
+{text}
+"""
+
+
 def main():
     genai.configure(api_key=GOOGLE_API_KEY)
 
@@ -202,61 +213,107 @@ def main():
 
     print("Step 1：讀取晨報新聞與知識庫")
 
-    news_text = load_all_news(MORNING_INPUT_DIR)
+    news_files = list_news_files(MORNING_INPUT_DIR)
     knowledge_text = load_knowledge_folder(MORNING_KNOWLEDGE_DIR)
 
-    print("新聞字數：", len(news_text))
+    print("新聞檔案數：", len(news_files))
     print("知識庫字數：", len(knowledge_text))
 
-    classify_path = f"{MORNING_INTERMEDIATE_DIR}/classify_result.json"
-    extract_path = f"{MORNING_INTERMEDIATE_DIR}/news_extract.json"
-    knowledge_match_path = f"{MORNING_INTERMEDIATE_DIR}/knowledge_match.json"
+    all_news_items = []
 
-    print("Step 2：執行 News Classifier Agent")
+    print("Step 2：逐則新聞執行 Classifier / Extractor / Knowledge Retriever")
 
-    classify_result = load_or_generate(
-        classify_path,
-        lambda: generate_with_retry(
-            classifier_agent.classify(
-                news_text,
-                str(MORNING_TEMPLATE_DIR / "classifier_prompt.txt")
+    for idx, news_file in enumerate(news_files, start=1):
+        item_name = safe_name(news_file)
+        prefix = f"{idx:02d}_{item_name}"
+
+        print(f"\n處理第 {idx} 則新聞：{news_file.name}")
+
+        news_text = read_file(news_file)
+        news_block = build_news_block(news_file.name, news_text)
+
+        print("新聞字數：", len(news_text))
+
+        classify_path = f"{MORNING_ITEMS_DIR}/{prefix}_classify.json"
+        extract_path = f"{MORNING_ITEMS_DIR}/{prefix}_extract.json"
+        knowledge_match_path = f"{MORNING_ITEMS_DIR}/{prefix}_knowledge.json"
+        item_bundle_path = f"{MORNING_ITEMS_DIR}/{prefix}_item.json"
+
+        classify_result = load_or_generate(
+            classify_path,
+            lambda: generate_with_retry(
+                classifier_agent.classify(
+                    news_block,
+                    str(MORNING_TEMPLATE_DIR / "classifier_prompt.txt")
+                )
             )
         )
-    )
 
-    print("Step 3：執行 News Extractor Agent")
-
-    news_extract = load_or_generate(
-        extract_path,
-        lambda: generate_with_retry(
-            extractor_agent.extract(
-                news_text,
-                str(MORNING_TEMPLATE_DIR / "extractor_prompt.txt")
+        news_extract = load_or_generate(
+            extract_path,
+            lambda: generate_with_retry(
+                extractor_agent.extract(
+                    news_block,
+                    str(MORNING_TEMPLATE_DIR / "extractor_prompt.txt")
+                )
             )
         )
-    )
 
-    print("Step 4：執行 Knowledge Retriever Agent")
-
-    knowledge_match = load_or_generate(
-        knowledge_match_path,
-        lambda: generate_with_retry(
-            knowledge_retriever_agent.retrieve(
-                news_extract,
-                knowledge_text,
-                str(MORNING_TEMPLATE_DIR / "knowledge_retriever_prompt.txt")
+        knowledge_match = load_or_generate(
+            knowledge_match_path,
+            lambda: generate_with_retry(
+                knowledge_retriever_agent.retrieve(
+                    news_extract,
+                    knowledge_text,
+                    str(MORNING_TEMPLATE_DIR / "knowledge_retriever_prompt.txt")
+                )
             )
         )
-    )
 
-    print("Step 5：產生晨報講稿")
+        item_bundle = f"""
+{{
+  "news_file": "{news_file.name}",
+  "classify_result": {repr(classify_result)},
+  "news_extract": {repr(news_extract)},
+  "knowledge_match": {repr(knowledge_match)}
+}}
+"""
+
+        save_text(item_bundle_path, item_bundle)
+
+        all_news_items.append(
+            f"""
+==============================
+新聞序號：{idx}
+新聞檔名：{news_file.name}
+==============================
+
+【分類結果】
+{classify_result}
+
+【新聞萃取結果】
+{news_extract}
+
+【知識庫補充資料】
+{knowledge_match}
+"""
+        )
+
+    combined_items_text = "\n\n".join(all_news_items)
+
+    combined_items_path = f"{MORNING_INTERMEDIATE_DIR}/all_news_items.json"
+    save_text(combined_items_path, combined_items_text)
+
+    print("\nStep 3：Writer 整合所有新聞，產生一份晨報講稿")
 
     morning_prompt = writer_agent.write(
         str(MORNING_TEMPLATE_DIR / "writer_prompt.txt"),
         {
-            "新聞分類結果": classify_result,
-            "新聞萃取結果": news_extract,
-            "知識庫補充資料": knowledge_match
+            "各則新聞整理結果": combined_items_text,
+            "寫作要求": (
+                "請依各則新聞分段整理，避免混淆不同新聞。"
+                "每則新聞應保留清楚邏輯，最後整合成一份晨報講稿。"
+            )
         }
     )
 
@@ -267,10 +324,9 @@ def main():
     save_text(txt_path, morning_text)
 
     print("完成！")
-    print(f"中間成果：{MORNING_INTERMEDIATE_DIR}")
-    print(f"分類結果：{classify_path}")
-    print(f"新聞萃取：{extract_path}")
-    print(f"知識庫比對：{knowledge_match_path}")
+    print(f"中間成果資料夾：{MORNING_INTERMEDIATE_DIR}")
+    print(f"逐則新聞中間檔：{MORNING_ITEMS_DIR}")
+    print(f"整合新聞資料：{combined_items_path}")
     print(f"晨報文字檔：{txt_path}")
 
 
