@@ -9,8 +9,6 @@ from docx import Document
 import pdfplumber
 
 
-GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
-
 BASE_DIR = "/content/drive/MyDrive/會議紀錄自動化"
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -188,7 +186,14 @@ def build_news_block(file_name, text):
 
 
 def run():
-    genai.configure(api_key=GOOGLE_API_KEY)
+    google_api_key = os.environ.get("GOOGLE_API_KEY")
+
+    if not google_api_key:
+        raise RuntimeError(
+            "缺少 GOOGLE_API_KEY。請先設定環境變數或 Colab Secrets。"
+        )
+
+    genai.configure(api_key=google_api_key)
 
     classifier_agent = load_module(
         "classifier_agent",
@@ -377,4 +382,3 @@ def run():
         "final_txt_path": final_txt_path,
         "final_docx_path": final_docx_path,
     }
-
