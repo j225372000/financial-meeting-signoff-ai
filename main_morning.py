@@ -216,6 +216,11 @@ def main():
         str(PROJECT_ROOT / "src" / "agents" / "formatter_agent.py")
     )
 
+    word_exporter = load_module(
+        "word_exporter",
+        str(PROJECT_ROOT / "src" / "exporters" / "word_exporter.py")
+    )
+
     print("Step 1：讀取晨報新聞與知識庫")
 
     news_files = list_news_files(MORNING_INPUT_DIR)
@@ -348,12 +353,30 @@ def main():
     final_txt_path = f"{MORNING_OUTPUT_DIR}/final_morning_brief.txt"
     save_text(final_txt_path, final_morning_text)
 
+    print("\nStep 5：Word Export")
+
+    template_path = str(
+        MORNING_TEMPLATE_DIR / "morning_report_template.docx"
+    )
+
+    final_docx_path = (
+        f"{MORNING_OUTPUT_DIR}/final_morning_brief.docx"
+    )
+
+    word_exporter.export_morning_report(
+        txt_path=final_txt_path,
+        template_path=template_path,
+        output_path=final_docx_path,
+        report_date=time.strftime("%Y.%m.%d")
+    )
+
     print("完成！")
     print(f"中間成果資料夾：{MORNING_INTERMEDIATE_DIR}")
     print(f"逐則新聞中間檔：{MORNING_ITEMS_DIR}")
     print(f"整合新聞資料：{combined_items_path}")
     print(f"Writer草稿：{raw_txt_path}")
     print(f"正式晨報文字檔：{final_txt_path}")
+    print(f"正式晨報Word：{final_docx_path}")
 
 
 if __name__ == "__main__":
