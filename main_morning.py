@@ -216,9 +216,9 @@ def main():
         str(PROJECT_ROOT / "src" / "agents" / "formatter_agent.py")
     )
 
-    word_exporter = load_module(
-        "word_exporter",
-        str(PROJECT_ROOT / "src" / "exporters" / "word_exporter.py")
+    docx_writer = load_module(
+        "docx_writer",
+        str(PROJECT_ROOT / "src" / "utils" / "docx_writer.py")
     )
 
     print("Step 1：讀取晨報新聞與知識庫")
@@ -353,21 +353,13 @@ def main():
     final_txt_path = f"{MORNING_OUTPUT_DIR}/final_morning_brief.txt"
     save_text(final_txt_path, final_morning_text)
 
-    print("\nStep 5：Word Export")
+    print("\nStep 5：產生晨報 Word 檔")
 
-    template_path = str(
-        MORNING_TEMPLATE_DIR / "morning_report_template.docx"
-    )
+    final_docx_path = f"{MORNING_OUTPUT_DIR}/final_morning_brief.docx"
 
-    final_docx_path = (
-        f"{MORNING_OUTPUT_DIR}/final_morning_brief.docx"
-    )
-
-    word_exporter.export_morning_report(
-        txt_path=final_txt_path,
-        template_path=template_path,
-        output_path=final_docx_path,
-        report_date=time.strftime("%Y.%m.%d")
+    docx_writer.write_morning_docx(
+        final_morning_text,
+        final_docx_path
     )
 
     print("完成！")
@@ -376,7 +368,7 @@ def main():
     print(f"整合新聞資料：{combined_items_path}")
     print(f"Writer草稿：{raw_txt_path}")
     print(f"正式晨報文字檔：{final_txt_path}")
-    print(f"正式晨報Word：{final_docx_path}")
+    print(f"正式晨報Word檔：{final_docx_path}")
 
 
 if __name__ == "__main__":
