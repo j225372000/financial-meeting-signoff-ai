@@ -211,6 +211,11 @@ def main():
         str(PROJECT_ROOT / "src" / "agents" / "writer_agent.py")
     )
 
+    formatter_agent = load_module(
+        "formatter_agent",
+        str(PROJECT_ROOT / "src" / "agents" / "formatter_agent.py")
+    )
+
     print("Step 1：讀取晨報新聞與知識庫")
 
     news_files = list_news_files(MORNING_INPUT_DIR)
@@ -304,7 +309,7 @@ def main():
     combined_items_path = f"{MORNING_INTERMEDIATE_DIR}/all_news_items.json"
     save_text(combined_items_path, combined_items_text)
 
-    print("\nStep 3：Writer 整合所有新聞，產生一份晨報講稿")
+    print("\nStep 3：Writer 整合所有新聞，產生晨報草稿")
 
     morning_prompt = writer_agent.write(
         str(MORNING_TEMPLATE_DIR / "writer_prompt.txt"),
@@ -312,22 +317,43 @@ def main():
             "各則新聞整理結果": combined_items_text,
             "寫作要求": (
                 "請依各則新聞分段整理，避免混淆不同新聞。"
-                "每則新聞應保留清楚邏輯，最後整合成一份晨報講稿。"
+                "每則新聞應保留清楚邏輯，並使用金融專業、主管早報口吻。"
+                "此階段負責內容品質、語氣與邏輯，不負責最終版型。"
             )
         }
     )
 
-    morning_text = generate_with_retry(morning_prompt)
+    morning_draft_text = generate_with_retry(morning_prompt)
 
-    txt_path = f"{MORNING_OUTPUT_DIR}/morning_brief.txt"
+    raw_txt_path = f"{MORNING_OUTPUT_DIR}/morning_brief_raw.txt"
+    save_text(raw_txt_path, morning_draft_text)
 
-    save_text(txt_path, morning_text)
+    print("\nStep 4：Formatter 依早報格式產生正式晨報")
+
+    formatter_prompt = formatter_agent.format_report(
+        str(MORNING_TEMPLATE_DIR / "formatter_prompt.txt"),
+        {
+            "逐則新聞分類與整理結果": combined_items_text,
+            "Writer晨報草稿": morning_draft_text,
+            "格式規則": (
+                "分類屬於股市、債市、匯市者，放入「二、市場摘要」。"
+                "其餘分類放入「一、重大新聞」。"
+                "請依使用者提供的早報格式整理，不新增事實。"
+            )
+        }
+    )
+
+    final_morning_text = generate_with_retry(formatter_prompt)
+
+    final_txt_path = f"{MORNING_OUTPUT_DIR}/final_morning_brief.txt"
+    save_text(final_txt_path, final_morning_text)
 
     print("完成！")
     print(f"中間成果資料夾：{MORNING_INTERMEDIATE_DIR}")
     print(f"逐則新聞中間檔：{MORNING_ITEMS_DIR}")
     print(f"整合新聞資料：{combined_items_path}")
-    print(f"晨報文字檔：{txt_path}")
+    print(f"Writer草稿：{raw_txt_path}")
+    print(f"正式晨報文字檔：{final_txt_path}")
 
 
 if __name__ == "__main__":
