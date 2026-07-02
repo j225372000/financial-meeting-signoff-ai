@@ -13,3 +13,11 @@ steps:
     input: news_text
     output: extract_result
     prompt: templates/morning/extractor_prompt.txt
+
+  - id: write_draft
+    skill: writer
+    data:
+      - classify_result
+      - extract_result
+    output: draft_prompt
+    prompt: templates/morning/writer_prompt.txt
