@@ -1,0 +1,15 @@
+name: morning_test
+description: 測試 YAML 驅動的 Morning Workflow
+
+steps:
+  - id: classify_news
+    skill: classifier
+    input: news_text
+    output: classify_result
+    prompt: templates/morning/classifier_prompt.txt
+
+  - id: extract_news
+    skill: extractor
+    input: news_text
+    output: extract_result
+    prompt: templates/morning/extractor_prompt.txt
