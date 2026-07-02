@@ -10,26 +10,13 @@ STREAMLIT_LOG = Path("/content/streamlit.log")
 CLOUDFLARE_LOG = Path("/content/cloudflare.log")
 
 
-def load_google_api_key():
-    if os.environ.get("GOOGLE_API_KEY"):
-        print("✓ GOOGLE_API_KEY 已存在")
-        return
+def check_google_api_key():
+    if not os.environ.get("GOOGLE_API_KEY"):
+        raise RuntimeError(
+            "缺少 GOOGLE_API_KEY。請先在 Colab cell 載入 API Key。"
+        )
 
-    try:
-        from google.colab import userdata
-        api_key = userdata.get("GOOGLE_API_KEY")
-
-        if api_key:
-            os.environ["GOOGLE_API_KEY"] = api_key
-            print("✓ 已從 Colab Secrets 載入 GOOGLE_API_KEY")
-            return
-
-    except Exception:
-        pass
-
-    raise RuntimeError(
-        "找不到 GOOGLE_API_KEY。請到 Colab 左側 Secrets 建立 GOOGLE_API_KEY。"
-    )
+    print("✓ GOOGLE_API_KEY 已確認")
 
 
 def run_background(cmd, log_path):
@@ -45,7 +32,7 @@ def run_background(cmd, log_path):
 
 
 def main():
-    load_google_api_key()
+    check_google_api_key()
 
     print("Step 1：啟動 Streamlit")
 
