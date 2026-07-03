@@ -1,5 +1,5 @@
-name: morning_test
-description: 測試 YAML 驅動的 Morning Workflow，含 classifier、extractor、writer
+name: morning
+description: 每日金融晨報 YAML Workflow
 
 steps:
   - id: classify_news
@@ -35,3 +35,25 @@ steps:
     provider: gemini
     model: models/gemini-2.5-flash-lite
     retry: 1
+
+  - id: format_report
+    skill: formatter
+    input:
+      classify_result: memory.classify_result
+      extract_result: memory.extract_result
+      draft_text: memory.draft_text
+    output:
+      result: output.final_text
+    prompt: templates/morning/formatter_prompt.txt
+    provider: gemini
+    model: models/gemini-2.5-flash-lite
+    retry: 1
+
+  - id: export_docx
+    skill: docx
+    input:
+      text: output.final_text
+      output_path: output.docx_path
+    output:
+      path: output.docx_path
+    mode: morning
