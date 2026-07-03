@@ -1,7 +1,29 @@
 name: morning_test
-description: 測試 YAML 驅動的 Morning Workflow，含 Data Mapping 與 Provider
+description: 測試 YAML 驅動的 Morning Workflow，含 classifier、extractor、writer
 
 steps:
+  - id: classify_news
+    skill: classifier
+    input:
+      text: input.news_text
+    output:
+      result: memory.classify_result
+    prompt: templates/morning/classifier_prompt.txt
+    provider: gemini
+    model: models/gemini-2.5-flash-lite
+    retry: 1
+
+  - id: extract_news
+    skill: extractor
+    input:
+      text: input.news_text
+    output:
+      result: memory.extract_result
+    prompt: templates/morning/extractor_prompt.txt
+    provider: gemini
+    model: models/gemini-2.5-flash-lite
+    retry: 1
+
   - id: write_draft
     skill: writer
     input:
