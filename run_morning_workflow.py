@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 
+from docx import Document
+
 from src.core.context import PlatformContext
 from src.core.workflow_engine import WorkflowEngine
 
@@ -10,16 +12,18 @@ NEWS_INPUT_DIR = f"{BASE_DIR}/input/morning/news"
 OUTPUT_DIR = f"{BASE_DIR}/output/morning"
 
 
-def read_text_safely(path):
-    encodings = ["utf-8", "utf-8-sig", "cp950", "big5", "latin-1"]
+def read_docx(path):
+    doc = Document(path)
 
-    for enc in encodings:
-        try:
-            return Path(path).read_text(encoding=enc)
-        except UnicodeDecodeError:
-            continue
+    texts = []
 
-    raise ValueError(f"無法判斷檔案編碼：{path}")
+    for paragraph in doc.paragraphs:
+        text = paragraph.text.strip()
+
+        if text:
+            texts.append(text)
+
+    return "\n".join(texts)
 
 
 def load_news_text():
@@ -32,18 +36,19 @@ def load_news_text():
         p for p in folder.iterdir()
         if p.is_file()
         and not p.name.startswith("~$")
-        and p.suffix.lower() in [".txt", ".md"]
+        and p.suffix.lower() == ".docx"
     ])
 
     if not files:
         raise FileNotFoundError(
-            f"新聞資料夾內沒有 .txt 或 .md 檔案：{NEWS_INPUT_DIR}"
+            f"新聞資料夾內沒有 .docx 檔案：{NEWS_INPUT_DIR}"
         )
 
     contents = []
 
     for file in files:
-        text = read_text_safely(file)
+        text = read_docx(file)
+
         contents.append(
             f"\n\n===== 新聞檔案：{file.name} =====\n\n{text}"
         )
@@ -80,7 +85,8 @@ def main():
     save_text(txt_path, final_text)
 
     print("\n完成 Morning YAML Workflow")
-    print(result.to_dict())
+    print(f"文字檔：{txt_path}")
+    print(f"Word檔：{result.get('output', 'docx_path')}")
 
 
 if __name__ == "__main__":
