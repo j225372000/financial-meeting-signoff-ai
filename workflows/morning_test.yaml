@@ -1,23 +1,12 @@
 name: morning_test
-description: 測試 YAML 驅動的 Morning Workflow
+description: 測試 YAML 驅動的 Morning Workflow，含 Data Mapping
 
 steps:
-  - id: classify_news
-    skill: classifier
-    input: news_text
-    output: classify_result
-    prompt: templates/morning/classifier_prompt.txt
-
-  - id: extract_news
-    skill: extractor
-    input: news_text
-    output: extract_result
-    prompt: templates/morning/extractor_prompt.txt
-
   - id: write_draft
     skill: writer
-    data:
-      - classify_result
-      - extract_result
-    output: draft_prompt
+    input:
+      classify_result: memory.classify_result
+      extract_result: memory.extract_result
+    output:
+      result: memory.draft_prompt
     prompt: templates/morning/writer_prompt.txt
