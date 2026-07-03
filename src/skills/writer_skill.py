@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from src.skills.base_skill import BaseSkill
 from src.agents import writer_agent
 
@@ -5,20 +7,14 @@ from src.agents import writer_agent
 class WriterSkill(BaseSkill):
     name = "writer"
 
-    def run(self, context: dict, step_config: dict) -> dict:
-        output_key = step_config["output"]
+    def run(self, inputs: dict, step_config: dict) -> dict:
         prompt_path = step_config["prompt"]
-        data_keys = step_config["data"]
-
-        data = {
-            key: context[key]
-            for key in data_keys
-        }
 
         result = writer_agent.write(
             prompt_path,
-            data
+            inputs
         )
 
-        context[output_key] = result
-        return context
+        return {
+            "result": result
+        }
