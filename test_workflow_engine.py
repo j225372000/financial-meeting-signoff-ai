@@ -1,11 +1,17 @@
 import os
-from google.colab import userdata
 
 from src.core.context import PlatformContext
 from src.core.workflow_engine import WorkflowEngine
 
 
-os.environ["GOOGLE_API_KEY"] = userdata.get("GOOGLE_API_KEY")
+if not os.environ.get("GOOGLE_API_KEY"):
+    raise RuntimeError(
+        "缺少 GOOGLE_API_KEY。請先在 Colab cell 執行：\n"
+        "from google.colab import userdata\n"
+        "import os\n"
+        "os.environ['GOOGLE_API_KEY'] = userdata.get('GOOGLE_API_KEY')"
+    )
+
 
 context = PlatformContext()
 
