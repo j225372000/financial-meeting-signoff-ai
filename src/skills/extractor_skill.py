@@ -1,19 +1,33 @@
 from src.skills.base_skill import BaseSkill
 from src.agents import extractor_agent
+from src.providers.provider_registry import get_provider
 
 
 class ExtractorSkill(BaseSkill):
     name = "extractor"
 
-    def run(self, context: dict, step_config: dict) -> dict:
-        input_key = step_config["input"]
-        output_key = step_config["output"]
+    def run(self, inputs: dict, step_config: dict) -> dict:
         prompt_path = step_config["prompt"]
 
-        result = extractor_agent.extract(
-            context[input_key],
+        provider_name = step_config.get("provider", "gemini")
+        model = step_config.get("model")
+        retry = step_config.get("retry", 3)
+
+        text = inputs["text"]
+
+        prompt = extractor_agent.extract(
+            text,
             prompt_path
         )
 
-        context[output_key] = result
-        return context
+        provider = get_provider(provider_name)
+
+        result = provider.generate(
+            prompt=prompt,
+            model=model,
+            retry=retry
+        )
+
+        return {
+            "result": result
+        }
