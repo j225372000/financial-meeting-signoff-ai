@@ -1,5 +1,5 @@
 name: morning_test
-description: 測試 YAML 驅動的 Morning Workflow，含 Data Mapping
+description: 測試 YAML 驅動的 Morning Workflow，含 Data Mapping 與 Provider
 
 steps:
   - id: write_draft
@@ -8,5 +8,8 @@ steps:
       classify_result: memory.classify_result
       extract_result: memory.extract_result
     output:
-      result: memory.draft_prompt
+      result: memory.draft_text
     prompt: templates/morning/writer_prompt.txt
+    provider: gemini
+    model: models/gemini-2.5-flash-lite
+    retry: 1
