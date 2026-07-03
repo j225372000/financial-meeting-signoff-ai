@@ -1,6 +1,11 @@
+import os
+from google.colab import userdata
+
 from src.core.context import PlatformContext
 from src.core.workflow_engine import WorkflowEngine
 
+
+os.environ["GOOGLE_API_KEY"] = userdata.get("GOOGLE_API_KEY")
 
 context = PlatformContext()
 
