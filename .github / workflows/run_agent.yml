@@ -1,4 +1,4 @@
-name: 🚀 執行每日金融晨報 AI 流水線
+name: "🚀 執行每日金融晨報 AI 流水線"
 
 on:
   workflow_dispatch:
@@ -11,41 +11,37 @@ on:
 jobs:
   execute-pipeline:
     runs-on: ubuntu-latest
-    
     steps:
-    - name: 📥 1. 下載專案原始碼 (Checkout)
-      uses: actions/checkout@v4
-      with:
-        persist-credentials: true
-        token: ${{ secrets.GITHUB_TOKEN }} # 🛡️ 塞入憑證，徹底根置 429 阻斷問題
+      - name: "📥 1. 下載專案原始碼"
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: 🐍 2. 設定 Python 3.10 環境
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
+      - name: "🐍 2. 設定 Python 環境"
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
 
-    - name: 📦 3. 安裝 AI 框架與必要套件
-      run: |
-        python -m pip install --upgrade pip
-        # 💡 這裡會自動尋找你專案中的 requirements.txt 安裝對應的 AI 驅動庫
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      - name: "📦 3. 安裝 AI 框架與必要套件"
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-    - name: ⚙️ 4. 發動你的原始 AI 工作流 (保持原始結構不變)
-      env:
-        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        INPUT_NEWS_TEXT: ${{ github.event.inputs.news_text }}
-      run: |
-        # 💡 這裡呼叫你專案中負責解析 YAML 的主 Python 程式（例如叫 run_pipeline.py）
-        # 並將你輸入的新聞文字與原始的 morning_flow.yml 配置檔一起丟進去跑
-        python run_pipeline.py --config .github/workflows/morning_flow.yml --text "$INPUT_NEWS_TEXT"
+      - name: "⚙️ 4. 發動你的原始 AI 工作流"
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          INPUT_NEWS_TEXT: ${{ github.event.inputs.news_text }}
+        run: |
+          python run_pipeline.py --config .github/workflows/morning_flow.yml --text "$INPUT_NEWS_TEXT"
 
-    - name: 💾 5. 自動將產出的 Word 檔案變更回傳至 GitHub
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git fetch origin
-        git add *.docx || true
-        if ! git diff --cached --quiet; then
-          git commit -m "✨ AI自動更新：產出今日金融晨報 Word 檔 [skip ci]"
-          git push origin HEAD:${{ github.ref }}
-        fi
+      - name: "💾 5. 自動將產出的 Word 檔案變更回傳至 GitHub"
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git fetch origin
+          git add *.docx || true
+          if ! git diff --cached --quiet; then
+            git commit -m "✨ AI自動更新：產出今日金融晨報 Word 檔 [skip ci]"
+            git push origin HEAD:${{ github.ref }}
+          fi
