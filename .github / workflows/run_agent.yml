@@ -1,5 +1,6 @@
 name: "🚀 執行每日金融晨報 AI 流水線"
 
+# 🎯 這是 GitHub 官方唯一的「手動觸發按鈕」語法，這段絕對不能少
 on:
   workflow_dispatch:
     inputs:
@@ -9,7 +10,7 @@ on:
         default: '請在此貼上今天的新聞正文...'
 
 jobs:
-  execute-pipeline:
+  execute-agentflow:
     runs-on: ubuntu-latest
     steps:
       - name: "📥 1. 下載專案原始碼"
@@ -23,9 +24,10 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: "📦 3. 安裝 AI 框架與必要套件"
+      - name: "📦 3. 安裝 NextData AgentFlow 核心套件"
         run: |
           python -m pip install --upgrade pip
+          # 💡 自動安裝框架所需的依賴度
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
       - name: "⚙️ 4. 發動你的原始 AI 工作流"
@@ -33,7 +35,8 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           INPUT_NEWS_TEXT: ${{ github.event.inputs.news_text }}
         run: |
-          python run_pipeline.py --config .github/workflows/morning_flow.yml --text "$INPUT_NEWS_TEXT"
+          # 💡 這行才是實質驅動你原本配置檔的 Python 引擎指令
+          python main.py --config .github/workflows/morning.yml --text "$INPUT_NEWS_TEXT"
 
       - name: "💾 5. 自動將產出的 Word 檔案變更回傳至 GitHub"
         run: |
