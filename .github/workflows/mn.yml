@@ -27,3 +27,9 @@ jobs:
       - name: Run Morning Workflow
         run: |
           python run_morning_workflow.py
+
+      - name: Upload Morning Output
+        uses: actions/upload-artifact@v4
+        with:
+          name: morning-output
+          path: tests/fixtures/output/morning/
